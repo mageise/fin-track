@@ -29,7 +29,7 @@ export function AppContent() {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/fin-track">
       <AppContent />
     </BrowserRouter>
   )
