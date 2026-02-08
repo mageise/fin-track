@@ -84,7 +84,7 @@ export function InvestmentForm({ investment, onClose }: InvestmentFormProps) {
           >
             {INVESTMENT_TYPES.map((type) => (
               <option key={type.value} value={type.value}>
-                {type.label}
+                {t(type.translationKey)}
               </option>
             ))}
           </select>
@@ -101,7 +101,7 @@ export function InvestmentForm({ investment, onClose }: InvestmentFormProps) {
           >
             {INVESTMENT_ACCOUNTS.map((account) => (
               <option key={account.value} value={account.value}>
-                {account.label}
+                {t(account.translationKey)}
               </option>
             ))}
           </select>
@@ -119,7 +119,7 @@ export function InvestmentForm({ investment, onClose }: InvestmentFormProps) {
             onChange={(e) => setFormData({ ...formData, shares: parseFloat(e.target.value) || 0 })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             min="0"
-            step="0.001"
+            step="0.00000001"
             required
           />
         </div>
@@ -134,7 +134,7 @@ export function InvestmentForm({ investment, onClose }: InvestmentFormProps) {
             onChange={(e) => setFormData({ ...formData, costBasis: parseFloat(e.target.value) || 0 })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             min="0"
-            step="0.01"
+            step="0.00000001"
             required
           />
         </div>
@@ -149,7 +149,7 @@ export function InvestmentForm({ investment, onClose }: InvestmentFormProps) {
             onChange={(e) => setFormData({ ...formData, currentPrice: parseFloat(e.target.value) || 0 })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             min="0"
-            step="0.01"
+            step="0.00000001"
             required
           />
         </div>

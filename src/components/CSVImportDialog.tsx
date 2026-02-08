@@ -3,6 +3,7 @@ import { CheckCircle, AlertCircle, X, FileSpreadsheet, Settings2, Upload } from 
 import { Card } from './Card'
 import { INVESTMENT_TYPES, INVESTMENT_ACCOUNTS, type InvestmentType, type InvestmentAccount } from '../types/financial'
 import { useFinancial } from '../contexts/FinancialContext'
+import { useTranslation } from '../hooks/useTranslation'
 import { validateTickerSymbol } from '../services/yahooFinance'
 
 interface ImportPreviewItem {
@@ -22,19 +23,39 @@ interface ImportPreviewItem {
 }
 
 interface ColumnMapping {
-  shares: number
-  name: number
-  costBasis: number
-  currentPrice: number
-  symbol: number
+  shares: string
+  name: string
+  costBasis: string
+  currentPrice: string
+  symbol: string
 }
 
 const DEFAULT_MAPPING: ColumnMapping = {
-  shares: 0,      // Column 1 (0-indexed)
-  name: 1,        // Column 2 (0-indexed)
-  costBasis: 4,   // Column 5 (0-indexed)
-  currentPrice: 5, // Column 6 (0-indexed)
-  symbol: 16,     // Column 17 (0-indexed)
+  shares: '',
+  name: '',
+  costBasis: '',
+  currentPrice: '',
+  symbol: '',
+}
+
+const HEADER_PATTERNS: Record<keyof ColumnMapping, string[]> = {
+  shares: ['shares', 'anteile', 'menge', 'quantity', 'qty', 'anzahl', 'stück'],
+  name: ['name', 'bezeichnung', 'investment', 'titel', 'description'],
+  costBasis: ['cost', 'cost basis', 'anschaffungskosten', 'kosten', 'einstandspreis', 'purchase price', 'paid'],
+  currentPrice: ['price', 'current price', 'preis', 'aktueller preis', 'market price', 'kurs'],
+  symbol: ['symbol', 'ticker', 'isin', 'wkn', 'kennnummer'],
+}
+
+function findBestHeaderMatch(headers: string[], patterns: string[]): string {
+  const normalizedHeaders = headers.map(h => h.toLowerCase().trim())
+  for (const header of normalizedHeaders) {
+    for (const pattern of patterns) {
+      if (header.includes(pattern)) {
+        return headers[normalizedHeaders.indexOf(header)]
+      }
+    }
+  }
+  return ''
 }
 
 interface CSVImportDialogProps {
@@ -53,6 +74,7 @@ function parseNumber(value: string): number | null {
 }
 
 export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
+  const { t } = useTranslation()
   const { state, addInvestment } = useFinancial()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
@@ -64,48 +86,60 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
   const [rawCSV, setRawCSV] = useState<string[][]>([])
   const [fileName, setFileName] = useState<string>('')
   const [isDragging, setIsDragging] = useState(false)
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([])
 
   const validateItem = useCallback((item: Partial<ImportPreviewItem>): string[] => {
     const errors: string[] = []
-    
+
     if (!item.symbol || !validateTickerSymbol(item.symbol)) {
-      errors.push('Invalid ticker symbol')
+      errors.push(t('errorInvalidTicker'))
     }
-    
+
     if (!item.name || item.name.trim() === '') {
-      errors.push('Name is required')
+      errors.push(t('errorNameRequired'))
     }
-    
+
     if (item.shares === undefined || item.shares === null || item.shares <= 0) {
-      errors.push('Shares must be positive')
+      errors.push(t('errorSharesPositive'))
     }
-    
+
     if (item.costBasis === undefined || item.costBasis === null || item.costBasis < 0) {
-      errors.push('Cost basis must be non-negative')
+      errors.push(t('errorCostBasisNonNegative'))
     }
-    
+
     if (item.currentPrice === undefined || item.currentPrice === null || item.currentPrice < 0) {
-      errors.push('Current price must be non-negative')
+      errors.push(t('errorPriceNonNegative'))
     }
-    
+
     return errors
-  }, [])
+  }, [t])
 
   const processCSV = useCallback((lines: string[][], mapping: ColumnMapping): ImportPreviewItem[] => {
     const items: ImportPreviewItem[] = []
     const existingSymbols = new Set(state.investments.map(inv => inv.symbol.toUpperCase()))
-    
-    // Skip header row, start from index 1
+
+    const headers = lines[0].map(h => h.toLowerCase().trim())
+    const getIndex = (headerName: string): number => {
+      if (!headerName) return -1
+      return headers.indexOf(headerName.toLowerCase().trim())
+    }
+
+    const sharesIdx = getIndex(mapping.shares)
+    const nameIdx = getIndex(mapping.name)
+    const costBasisIdx = getIndex(mapping.costBasis)
+    const currentPriceIdx = getIndex(mapping.currentPrice)
+    const symbolIdx = getIndex(mapping.symbol)
+
     for (let i = 1; i < lines.length && i <= 100; i++) {
       const line = lines[i]
       if (line.length === 0 || line.every(cell => cell.trim() === '')) continue
-      
-      const shares = parseNumber(line[mapping.shares] || '')
-      const name = (line[mapping.name] || '').trim()
-      const costBasis = parseNumber(line[mapping.costBasis] || '')
-      const currentPrice = parseNumber(line[mapping.currentPrice] || '')
-      const symbol = (line[mapping.symbol] || '').trim().toUpperCase()
-      
+
+      const shares = sharesIdx >= 0 ? parseNumber(line[sharesIdx] || '') : null
+      const name = nameIdx >= 0 ? (line[nameIdx] || '').trim() : ''
+      const costBasis = costBasisIdx >= 0 ? parseNumber(line[costBasisIdx] || '') : null
+      const currentPrice = currentPriceIdx >= 0 ? parseNumber(line[currentPriceIdx] || '') : null
+      const symbol = symbolIdx >= 0 ? (line[symbolIdx] || '').trim().toUpperCase() : ''
+
       const item: ImportPreviewItem = {
         id: generateId(),
         symbol,
@@ -121,14 +155,14 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
         selected: false,
         originalRow: i + 1,
       }
-      
+
       item.errors = validateItem(item)
       item.isValid = item.errors.length === 0 && !item.isExisting
       item.selected = item.isValid
-      
+
       items.push(item)
     }
-    
+
     return items
   }, [state.investments, validateItem])
 
@@ -136,43 +170,55 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
     setFileName(file.name)
     setIsLoading(true)
     setError(null)
-    
+
     const reader = new FileReader()
-    
+
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string
         const lines = content.split(/\r?\n/).map(line => line.split(';'))
-        
+
         if (lines.length < 2) {
-          setError('CSV file must have at least a header row and one data row')
+          setError(t('errorCSVHeaderRequired'))
           setIsLoading(false)
           return
         }
-        
+
         if (lines.length > 101) {
-          setError('CSV file contains more than 100 data rows. Please limit to 100 investments per import.')
+          setError(t('errorCSVMax100Rows'))
           setIsLoading(false)
           return
         }
-        
+
+        const headers = lines[0].map(h => h.trim())
+        setCsvHeaders(headers)
+
+        const autoMapping: ColumnMapping = {
+          shares: findBestHeaderMatch(headers, HEADER_PATTERNS.shares),
+          name: findBestHeaderMatch(headers, HEADER_PATTERNS.name),
+          costBasis: findBestHeaderMatch(headers, HEADER_PATTERNS.costBasis),
+          currentPrice: findBestHeaderMatch(headers, HEADER_PATTERNS.currentPrice),
+          symbol: findBestHeaderMatch(headers, HEADER_PATTERNS.symbol),
+        }
+        setColumnMapping(autoMapping)
+
         setRawCSV(lines)
-        const items = processCSV(lines, columnMapping)
+        const items = processCSV(lines, autoMapping)
         setPreviewData(items)
         setIsLoading(false)
       } catch (err) {
-        setError('Error parsing CSV file: ' + (err instanceof Error ? err.message : 'Unknown error'))
+        setError(t('errorCSVParse') + ': ' + (err instanceof Error ? err.message : 'Unknown error'))
         setIsLoading(false)
       }
     }
-    
+
     reader.onerror = () => {
-      setError('Error reading file')
+      setError(t('errorFileRead'))
       setIsLoading(false)
     }
-    
+
     reader.readAsText(file, 'UTF-8')
-  }, [columnMapping, processCSV])
+  }, [processCSV, t])
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -203,12 +249,12 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
       if (file.name.toLowerCase().endsWith('.csv') || file.type === 'text/csv') {
         processFile(file)
       } else {
-        setError('Please upload a CSV file')
+        setError(t('errorUploadCSV'))
       }
     }
-  }, [processFile])
+  }, [processFile, t])
 
-  const handleMappingChange = useCallback((field: keyof ColumnMapping, value: number) => {
+  const handleMappingChange = useCallback((field: keyof ColumnMapping, value: string) => {
     const newMapping = { ...columnMapping, [field]: value }
     setColumnMapping(newMapping)
     if (rawCSV.length > 0) {
@@ -269,9 +315,9 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">Import Investments</h2>
+            <h2 className="text-2xl font-bold text-gray-800">{t('importInvestmentsTitle')}</h2>
             <p className="text-gray-600 mt-1">
-              Upload a CSV file with semicolon-separated values
+              {t('importInvestmentsSubtitle')}
             </p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
@@ -301,10 +347,10 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
                 <p className={`text-lg font-medium mb-2 transition-colors ${
                   isDragging ? 'text-blue-700' : 'text-gray-700'
                 }`}>
-                  {isDragging ? 'Drop CSV file here' : 'Click or drop CSV file here'}
+                  {isDragging ? t('dropCSVFileHere') : t('clickOrDropCSVFile')}
                 </p>
                 <p className="text-sm text-gray-500">
-                  Semicolon-separated, max 100 rows, UTF-8 encoding
+                  {t('maxRowsHint')}
                 </p>
                 <input
                   ref={fileInputRef}
@@ -325,7 +371,7 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
               {isLoading && (
                 <div className="text-center py-4">
                   <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-2" />
-                  <p className="text-gray-600">Parsing CSV file...</p>
+                  <p className="text-gray-600">{t('parsingCSVFile')}</p>
                 </div>
               )}
             </div>
@@ -346,64 +392,79 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
                   className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
                 >
                   <Settings2 className="w-4 h-4" />
-                  {showMapping ? 'Hide' : 'Show'} Column Mapping
+                  {showMapping ? t('hideColumnMapping') : t('showColumnMapping')}
                 </button>
               </div>
 
               {/* Column Mapping */}
               {showMapping && (
                 <Card className="bg-blue-50">
-                  <h3 className="font-medium mb-3">Column Mapping</h3>
+                  <h3 className="font-medium mb-3">{t('columnMapping')}</h3>
                   <div className="grid grid-cols-5 gap-4">
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Shares (Col)</label>
-                      <input
-                        type="number"
-                        value={columnMapping.shares + 1}
-                        onChange={(e) => handleMappingChange('shares', parseInt(e.target.value) - 1)}
+                      <label className="block text-sm text-gray-600 mb-1">{t('symbolColumn')}</label>
+                      <select
+                        value={columnMapping.symbol}
+                        onChange={(e) => handleMappingChange('symbol', e.target.value)}
                         className="w-full px-2 py-1 border rounded"
-                        min="1"
-                      />
+                      >
+                        <option value="">--</option>
+                        {csvHeaders.map((header, idx) => (
+                          <option key={idx} value={header}>{header}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Name (Col)</label>
-                      <input
-                        type="number"
-                        value={columnMapping.name + 1}
-                        onChange={(e) => handleMappingChange('name', parseInt(e.target.value) - 1)}
+                      <label className="block text-sm text-gray-600 mb-1">{t('nameColumn')}</label>
+                      <select
+                        value={columnMapping.name}
+                        onChange={(e) => handleMappingChange('name', e.target.value)}
                         className="w-full px-2 py-1 border rounded"
-                        min="1"
-                      />
+                      >
+                        <option value="">--</option>
+                        {csvHeaders.map((header, idx) => (
+                          <option key={idx} value={header}>{header}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Cost Basis (Col)</label>
-                      <input
-                        type="number"
-                        value={columnMapping.costBasis + 1}
-                        onChange={(e) => handleMappingChange('costBasis', parseInt(e.target.value) - 1)}
+                      <label className="block text-sm text-gray-600 mb-1">{t('sharesColumn')}</label>
+                      <select
+                        value={columnMapping.shares}
+                        onChange={(e) => handleMappingChange('shares', e.target.value)}
                         className="w-full px-2 py-1 border rounded"
-                        min="1"
-                      />
+                      >
+                        <option value="">--</option>
+                        {csvHeaders.map((header, idx) => (
+                          <option key={idx} value={header}>{header}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Current Price (Col)</label>
-                      <input
-                        type="number"
-                        value={columnMapping.currentPrice + 1}
-                        onChange={(e) => handleMappingChange('currentPrice', parseInt(e.target.value) - 1)}
+                      <label className="block text-sm text-gray-600 mb-1">{t('costBasisColumn')}</label>
+                      <select
+                        value={columnMapping.costBasis}
+                        onChange={(e) => handleMappingChange('costBasis', e.target.value)}
                         className="w-full px-2 py-1 border rounded"
-                        min="1"
-                      />
+                      >
+                        <option value="">--</option>
+                        {csvHeaders.map((header, idx) => (
+                          <option key={idx} value={header}>{header}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Symbol (Col)</label>
-                      <input
-                        type="number"
-                        value={columnMapping.symbol + 1}
-                        onChange={(e) => handleMappingChange('symbol', parseInt(e.target.value) - 1)}
+                      <label className="block text-sm text-gray-600 mb-1">{t('currentPriceColumn')}</label>
+                      <select
+                        value={columnMapping.currentPrice}
+                        onChange={(e) => handleMappingChange('currentPrice', e.target.value)}
                         className="w-full px-2 py-1 border rounded"
-                        min="1"
-                      />
+                      >
+                        <option value="">--</option>
+                        {csvHeaders.map((header, idx) => (
+                          <option key={idx} value={header}>{header}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </Card>
@@ -413,17 +474,17 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
               <div className="flex gap-4 text-sm">
                 <div className="flex items-center gap-1">
                   <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span>{validCount} valid</span>
+                  <span>{validCount} {t('validCount')}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <AlertCircle className="w-4 h-4 text-red-600" />
-                  <span>{invalidCount} invalid</span>
+                  <span>{invalidCount} {t('invalidCount')}</span>
                 </div>
                 <div className="flex items-center gap-1 text-gray-500">
-                  <span>{existingCount} already in portfolio</span>
+                  <span>{existingCount} {t('alreadyInPortfolio')}</span>
                 </div>
                 <div className="flex items-center gap-1 font-medium">
-                  <span>{selectedCount} selected</span>
+                  <span>{selectedCount} {t('selectedCount')}</span>
                 </div>
               </div>
 
@@ -440,14 +501,14 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
                           className="rounded"
                         />
                       </th>
-                      <th className="px-3 py-2 text-left text-sm font-medium text-gray-600">Symbol</th>
-                      <th className="px-3 py-2 text-left text-sm font-medium text-gray-600">Name</th>
-                      <th className="px-3 py-2 text-right text-sm font-medium text-gray-600">Shares</th>
-                      <th className="px-3 py-2 text-right text-sm font-medium text-gray-600">Cost Basis</th>
-                      <th className="px-3 py-2 text-right text-sm font-medium text-gray-600">Current Price</th>
-                      <th className="px-3 py-2 text-left text-sm font-medium text-gray-600">Type</th>
-                      <th className="px-3 py-2 text-left text-sm font-medium text-gray-600">Account</th>
-                      <th className="px-3 py-2 text-left text-sm font-medium text-gray-600">Status</th>
+                      <th className="px-3 py-2 text-left text-sm font-medium text-gray-600">{t('tableHeaderSymbol')}</th>
+                      <th className="px-3 py-2 text-left text-sm font-medium text-gray-600">{t('tableHeaderName')}</th>
+                      <th className="px-3 py-2 text-right text-sm font-medium text-gray-600">{t('tableHeaderShares')}</th>
+                      <th className="px-3 py-2 text-right text-sm font-medium text-gray-600">{t('tableHeaderCostBasis')}</th>
+                      <th className="px-3 py-2 text-right text-sm font-medium text-gray-600">{t('tableHeaderCurrentPrice')}</th>
+                      <th className="px-3 py-2 text-left text-sm font-medium text-gray-600">{t('tableHeaderType')}</th>
+                      <th className="px-3 py-2 text-left text-sm font-medium text-gray-600">{t('tableHeaderAccount')}</th>
+                      <th className="px-3 py-2 text-left text-sm font-medium text-gray-600">{t('tableHeaderStatus')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -489,7 +550,7 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
                             value={item.shares}
                             onChange={(e) => handleFieldChange(item.id, 'shares', parseFloat(e.target.value) || 0)}
                             className={`w-24 px-2 py-1 border rounded text-sm text-right ${!item.isValid && item.errors.some(e => e.includes('Shares')) ? 'border-red-500 bg-red-50' : ''}`}
-                            step="0.001"
+                            step="0.00000001"
                             disabled={item.isExisting}
                           />
                         </td>
@@ -499,7 +560,7 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
                             value={item.costBasis}
                             onChange={(e) => handleFieldChange(item.id, 'costBasis', parseFloat(e.target.value) || 0)}
                             className={`w-24 px-2 py-1 border rounded text-sm text-right ${!item.isValid && item.errors.some(e => e.includes('Cost')) ? 'border-red-500 bg-red-50' : ''}`}
-                            step="0.01"
+                            step="0.00000001"
                             disabled={item.isExisting}
                           />
                         </td>
@@ -509,7 +570,7 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
                             value={item.currentPrice}
                             onChange={(e) => handleFieldChange(item.id, 'currentPrice', parseFloat(e.target.value) || 0)}
                             className={`w-24 px-2 py-1 border rounded text-sm text-right ${!item.isValid && item.errors.some(e => e.includes('price')) ? 'border-red-500 bg-red-50' : ''}`}
-                            step="0.01"
+                            step="0.00000001"
                             disabled={item.isExisting}
                           />
                         </td>
@@ -521,7 +582,7 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
                             disabled={item.isExisting}
                           >
                             {INVESTMENT_TYPES.map(type => (
-                              <option key={type.value} value={type.value}>{type.label}</option>
+                              <option key={type.value} value={type.value}>{t(type.translationKey)}</option>
                             ))}
                           </select>
                         </td>
@@ -533,13 +594,13 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
                             disabled={item.isExisting}
                           >
                             {INVESTMENT_ACCOUNTS.map(acc => (
-                              <option key={acc.value} value={acc.value}>{acc.label}</option>
+                              <option key={acc.value} value={acc.value}>{t(acc.translationKey)}</option>
                             ))}
                           </select>
                         </td>
                         <td className="px-3 py-2 text-sm">
                           {item.isExisting ? (
-                            <span className="text-gray-500">Already in portfolio</span>
+                            <span className="text-gray-500">{t('alreadyInPortfolioStatus')}</span>
                           ) : item.errors.length > 0 ? (
                             <div className="text-red-600 text-xs">
                               {item.errors.map((err, idx) => (
@@ -549,7 +610,7 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
                           ) : (
                             <span className="text-green-600 flex items-center gap-1">
                               <CheckCircle className="w-4 h-4" />
-                              Valid
+                              {t('statusValid')}
                             </span>
                           )}
                         </td>
@@ -568,7 +629,7 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
             onClick={onClose}
             className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
           >
-            Cancel
+            {t('cancel')}
           </button>
           {previewData.length > 0 && (
             <button
@@ -576,7 +637,7 @@ export function CSVImportDialog({ onClose }: CSVImportDialogProps) {
               disabled={selectedCount === 0}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Import {selectedCount} Investment{selectedCount !== 1 ? 's' : ''}
+              {selectedCount === 1 ? t('import1Investment') : t('importNInvestments').replace('{{count}}', String(selectedCount))}
             </button>
           )}
         </div>

@@ -305,8 +305,58 @@ export const translations = {
     accountNameLabel: 'Kontoname',
     accountNamePlaceholder: 'z.B. Brokerage Cash',
     amountLabel: 'Betrag',
+
+    // Portfolio Charts
+    portfolioCharts: 'Portfolio-Diagramme',
+    portfolioChartsSubtitle: 'Visualisiere deine Portfolio-Verteilung',
+
+    // Investment Types
+    investmentType_stock: 'Aktie',
+    investmentType_bond: 'Anleihe',
+    investmentType_etf: 'ETF',
+    investmentType_mutual_fund: 'Investmentfonds',
+    investmentType_crypto: 'Kryptowährung',
+    investmentType_commodity: 'Rohstoff',
+    investmentType_reit: 'REIT',
+    investmentType_cash: 'Geldmarkt',
+
+    // Investment Accounts
+    accountType_taxable: 'Brokerage',
+    accountType_ira: 'Traditional IRA',
+    accountType_roth_ira: 'Roth IRA',
+    accountType_401k: '401(k)',
+    accountType_hsa: 'HSA',
+    accountType_529: '529 Plan',
+
+    // CSV Import Dialog - New Keys
+    importInvestmentsTitle: 'Investitionen importieren',
+    importInvestmentsSubtitle: 'Lade eine CSV-Datei mit semikolon-getrennten Werten hoch',
+    dropCSVFileHere: 'CSV-Datei hier ablegen',
+    clickOrDropCSVFile: 'Klicke oder ziehe CSV-Datei hierher',
+    parsingCSVFile: 'CSV-Datei wird analysiert...',
+    importNInvestments: '{{count}} Investitionen importieren',
+    import1Investment: '1 Investition importieren',
+    errorInvalidTicker: 'Ungültiges Tickersymbol',
+    errorNameRequired: 'Name ist erforderlich',
+    errorSharesPositive: 'Anteile müssen positiv sein',
+    errorCostBasisNonNegative: 'Anschaffungskosten müssen nicht-negativ sein',
+    errorPriceNonNegative: 'Aktueller Preis muss nicht-negativ sein',
+    errorCSVHeaderRequired: 'CSV-Datei muss mindestens eine Kopfzeile und eine Datenzeile haben',
+    errorCSVMax100Rows: 'CSV-Datei enthält mehr als 100 Datenzeilen. Bitte auf 100 Investitionen pro Import begrenzen.',
+    errorCSVParse: 'Fehler beim Parsen der CSV-Datei',
+    errorFileRead: 'Fehler beim Lesen der Datei',
+    errorUploadCSV: 'Bitte lade eine CSV-Datei hoch',
+    statusValid: 'Gültig',
+    tableHeaderSymbol: 'Symbol',
+    tableHeaderName: 'Name',
+    tableHeaderShares: 'Anteile',
+    tableHeaderCostBasis: 'Anschaffungskosten',
+    tableHeaderCurrentPrice: 'Aktueller Preis',
+    tableHeaderType: 'Typ',
+    tableHeaderAccount: 'Konto',
+    tableHeaderStatus: 'Status',
   },
-  
+
   en: {
     // Common
     appTitle: 'FinTrack - Finance Tracker',
@@ -610,6 +660,56 @@ export const translations = {
     accountNameLabel: 'Account Name',
     accountNamePlaceholder: 'e.g., Brokerage Cash',
     amountLabel: 'Amount',
+
+    // Portfolio Charts
+    portfolioCharts: 'Portfolio Charts',
+    portfolioChartsSubtitle: 'Visualize your portfolio allocation',
+
+    // Investment Types
+    investmentType_stock: 'Stock',
+    investmentType_bond: 'Bond',
+    investmentType_etf: 'ETF',
+    investmentType_mutual_fund: 'Mutual Fund',
+    investmentType_crypto: 'Cryptocurrency',
+    investmentType_commodity: 'Commodity',
+    investmentType_reit: 'REIT',
+    investmentType_cash: 'Money Market',
+
+    // Investment Accounts
+    accountType_taxable: 'Brokerage',
+    accountType_ira: 'Traditional IRA',
+    accountType_roth_ira: 'Roth IRA',
+    accountType_401k: '401(k)',
+    accountType_hsa: 'HSA',
+    accountType_529: '529 Plan',
+
+    // CSV Import Dialog - New Keys
+    importInvestmentsTitle: 'Import Investments',
+    importInvestmentsSubtitle: 'Upload a CSV file with semicolon-separated values',
+    dropCSVFileHere: 'Drop CSV file here',
+    clickOrDropCSVFile: 'Click or drop CSV file here',
+    parsingCSVFile: 'Parsing CSV file...',
+    importNInvestments: 'Import {{count}} Investments',
+    import1Investment: 'Import 1 Investment',
+    errorInvalidTicker: 'Invalid ticker symbol',
+    errorNameRequired: 'Name is required',
+    errorSharesPositive: 'Shares must be positive',
+    errorCostBasisNonNegative: 'Cost basis must be non-negative',
+    errorPriceNonNegative: 'Current price must be non-negative',
+    errorCSVHeaderRequired: 'CSV file must have at least a header row and one data row',
+    errorCSVMax100Rows: 'CSV file contains more than 100 data rows. Please limit to 100 investments per import.',
+    errorCSVParse: 'Error parsing CSV file',
+    errorFileRead: 'Error reading file',
+    errorUploadCSV: 'Please upload a CSV file',
+    statusValid: 'Valid',
+    tableHeaderSymbol: 'Symbol',
+    tableHeaderName: 'Name',
+    tableHeaderShares: 'Shares',
+    tableHeaderCostBasis: 'Cost Basis',
+    tableHeaderCurrentPrice: 'Current Price',
+    tableHeaderType: 'Type',
+    tableHeaderAccount: 'Account',
+    tableHeaderStatus: 'Status',
   }
 } as const
 

@@ -1,3 +1,5 @@
+import type { TranslationKey } from '../i18n/translations'
+
 export type AssetType = 'cash' | 'investment' | 'retirement' | 'real_estate' | 'vehicle' | 'other'
 export type LiabilityType = 'mortgage' | 'auto_loan' | 'credit_card' | 'student_loan' | 'personal_loan' | 'other'
 
@@ -50,24 +52,24 @@ export interface Investment {
   notes?: string
 }
 
-export const INVESTMENT_TYPES: { value: InvestmentType; label: string }[] = [
-  { value: 'stock', label: 'Stock' },
-  { value: 'bond', label: 'Bond' },
-  { value: 'etf', label: 'ETF' },
-  { value: 'mutual_fund', label: 'Mutual Fund' },
-  { value: 'crypto', label: 'Cryptocurrency' },
-  { value: 'commodity', label: 'Commodity' },
-  { value: 'reit', label: 'REIT' },
-  { value: 'cash', label: 'Cash/Money Market' },
+export const INVESTMENT_TYPES: { value: InvestmentType; translationKey: TranslationKey }[] = [
+  { value: 'stock', translationKey: 'investmentType_stock' },
+  { value: 'bond', translationKey: 'investmentType_bond' },
+  { value: 'etf', translationKey: 'investmentType_etf' },
+  { value: 'mutual_fund', translationKey: 'investmentType_mutual_fund' },
+  { value: 'crypto', translationKey: 'investmentType_crypto' },
+  { value: 'commodity', translationKey: 'investmentType_commodity' },
+  { value: 'reit', translationKey: 'investmentType_reit' },
+  { value: 'cash', translationKey: 'investmentType_cash' },
 ]
 
-export const INVESTMENT_ACCOUNTS: { value: InvestmentAccount; label: string }[] = [
-  { value: 'taxable', label: 'Taxable Brokerage' },
-  { value: 'ira', label: 'Traditional IRA' },
-  { value: 'roth_ira', label: 'Roth IRA' },
-  { value: '401k', label: '401(k)' },
-  { value: 'hsa', label: 'HSA' },
-  { value: '529', label: '529 Plan' },
+export const INVESTMENT_ACCOUNTS: { value: InvestmentAccount; translationKey: TranslationKey }[] = [
+  { value: 'taxable', translationKey: 'accountType_taxable' },
+  { value: 'ira', translationKey: 'accountType_ira' },
+  { value: 'roth_ira', translationKey: 'accountType_roth_ira' },
+  { value: '401k', translationKey: 'accountType_401k' },
+  { value: 'hsa', translationKey: 'accountType_hsa' },
+  { value: '529', translationKey: 'accountType_529' },
 ]
 
 export const ASSET_TYPES: { value: AssetType; label: string; icon: string }[] = [

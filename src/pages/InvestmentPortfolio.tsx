@@ -32,9 +32,11 @@ import {
   ChevronUp,
   ChevronDown,
   Banknote,
+  PieChart as PieChartIcon,
 } from 'lucide-react'
 import { useFinancial } from '../contexts/FinancialContext'
 import { Card } from '../components/Card'
+import { CollapsibleSection } from '../components/CollapsibleSection'
 import { InvestmentForm } from '../components/InvestmentForm'
 import { CSVImportDialog } from '../components/CSVImportDialog'
 import { CashAccountForm } from '../components/CashAccountForm'
@@ -106,12 +108,12 @@ export function InvestmentPortfolio() {
     // Add investments
     typeMap.forEach((value, type) => {
       result.push({
-        name: INVESTMENT_TYPES.find((t) => t.value === type)?.label || type,
+        name: t(INVESTMENT_TYPES.find((item) => item.value === type)?.translationKey || 'investmentType_stock'),
         value,
       })
     })
     return result
-  }, [state.investments, totalCashAmount])
+  }, [state.investments, totalCashAmount, t])
 
   // Calculate allocation by account
   const allocationByAccount = useMemo(() => {
@@ -134,12 +136,12 @@ export function InvestmentPortfolio() {
     // Add investment accounts
     accountMap.forEach((value, account) => {
       result.push({
-        name: INVESTMENT_ACCOUNTS.find((a) => a.value === account)?.label || account,
+        name: t(INVESTMENT_ACCOUNTS.find((item) => item.value === account)?.translationKey || 'accountType_taxable'),
         value,
       })
     })
     return result
-  }, [state.investments, state.cashAccounts])
+  }, [state.investments, state.cashAccounts, t])
 
   // Calculate performance data for bar chart
   const performanceData = useMemo(() => {
@@ -412,78 +414,85 @@ export function InvestmentPortfolio() {
           </Card>
         </div>
 
-        {/* Charts Row */}
+        {/* Portfolio Charts Section */}
         {state.investments.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Allocation by Type */}
-            <Card title={t('allocationByType')}>
-              <div style={{ width: '100%', height: 250 }}>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={allocationByType}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {allocationByType.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => typeof value === 'number' ? formatCurrency(value) : String(value)} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
+          <CollapsibleSection
+            title={t('portfolioCharts')}
+            subtitle={t('portfolioChartsSubtitle')}
+            icon={PieChartIcon}
+            iconColor="text-purple-600"
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Allocation by Type */}
+              <Card title={t('allocationByType')}>
+                <div style={{ width: '100%', height: 250 }}>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={allocationByType}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {allocationByType.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => typeof value === 'number' ? formatCurrency(value) : String(value)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
 
-            {/* Allocation by Account */}
-            <Card title={t('allocationByAccount')}>
-              <div style={{ width: '100%', height: 250 }}>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={allocationByAccount}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {allocationByAccount.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => typeof value === 'number' ? formatCurrency(value) : String(value)} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
+              {/* Allocation by Account */}
+              <Card title={t('allocationByAccount')}>
+                <div style={{ width: '100%', height: 250 }}>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={allocationByAccount}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {allocationByAccount.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => typeof value === 'number' ? formatCurrency(value) : String(value)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
 
-            {/* Performance by Holding */}
-            <Card title={t('gainLossByHolding')}>
-              <div style={{ width: '100%', height: 250 }}>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={performanceData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" tickFormatter={(value) => `$${Number(value)}`} />
-                    <YAxis dataKey="symbol" type="category" width={60} />
-                    <Tooltip formatter={(value) => typeof value === 'number' ? formatCurrency(value) : String(value)} />
-                    <Bar
-                      dataKey="gain"
-                      fill="#3b82f6"
-                      radius={[0, 4, 4, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-          </div>
+              {/* Performance by Holding */}
+              <Card title={t('gainLossByHolding')}>
+                <div style={{ width: '100%', height: 250 }}>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={performanceData} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" tickFormatter={(value) => `$${Number(value)}`} />
+                      <YAxis dataKey="symbol" type="category" width={60} />
+                      <Tooltip formatter={(value) => typeof value === 'number' ? formatCurrency(value) : String(value)} />
+                      <Bar
+                        dataKey="gain"
+                        fill="#3b82f6"
+                        radius={[0, 4, 4, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            </div>
+          </CollapsibleSection>
         )}
 
         {/* Status Messages */}
@@ -687,10 +696,10 @@ export function InvestmentPortfolio() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          {INVESTMENT_TYPES.find((t) => t.value === investment.type)?.label}
+                          {t(INVESTMENT_TYPES.find((item) => item.value === investment.type)?.translationKey || 'investmentType_stock')}
                         </td>
                         <td className="px-4 py-3">
-                          {INVESTMENT_ACCOUNTS.find((a) => a.value === investment.account)?.label}
+                          {t(INVESTMENT_ACCOUNTS.find((item) => item.value === investment.account)?.translationKey || 'accountType_taxable')}
                         </td>
                         <td className="px-4 py-3 text-right">{formatNumber(investment.shares)}</td>
                         <td className="px-4 py-3 text-right">{formatCurrency(investment.costBasis)}</td>
@@ -767,7 +776,6 @@ function CashAccountsSection() {
   const { t } = useTranslation()
   const { formatCurrency } = useFormatters()
   const { state, deleteCashAccount, totalCashAmount } = useFinancial()
-  const [isExpanded, setIsExpanded] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingAccount, setEditingAccount] = useState<string | null>(null)
 
@@ -796,27 +804,14 @@ function CashAccountsSection() {
 
   return (
     <div className="mt-8">
-      {/* Collapsible Header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between w-full p-4 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+      <CollapsibleSection
+        title={t('cashAccounts')}
+        subtitle={t('cashAccountsSubtitle')}
+        icon={Banknote}
+        iconColor="text-emerald-600"
+        rightContent={<span className="text-2xl font-bold text-emerald-600">{formatCurrency(totalCashAmount)}</span>}
       >
-        <div className="flex items-center gap-3">
-          <Banknote className="w-6 h-6 text-emerald-600" />
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">{t('cashAccounts')}</h2>
-            <p className="text-sm text-gray-600">{t('cashAccountsSubtitle')}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-2xl font-bold text-emerald-600">{formatCurrency(totalCashAmount)}</span>
-          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-        </div>
-      </button>
-
-      {/* Expandable Content */}
-      {isExpanded && (
-        <div className="mt-4 space-y-4">
+        <div className="space-y-4">
           {/* Add Button */}
           <button
             onClick={() => setShowForm(true)}
@@ -861,7 +856,7 @@ function CashAccountsSection() {
             ))}
           </div>
         </div>
-      )}
+      </CollapsibleSection>
 
       {/* Add/Edit Form Modal */}
       {showForm && (
