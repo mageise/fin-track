@@ -1,0 +1,171 @@
+export type AssetType = 'cash' | 'investment' | 'retirement' | 'real_estate' | 'vehicle' | 'other'
+export type LiabilityType = 'mortgage' | 'auto_loan' | 'credit_card' | 'student_loan' | 'personal_loan' | 'other'
+
+export interface Asset {
+  id: string
+  name: string
+  type: AssetType
+  value: number
+  dateAdded: string
+  notes?: string
+}
+
+export interface Liability {
+  id: string
+  name: string
+  type: LiabilityType
+  value: number
+  interestRate?: number
+  dateAdded: string
+  notes?: string
+}
+
+export interface NetWorthHistory {
+  date: string
+  netWorth: number
+  assets: number
+  liabilities: number
+}
+
+export interface FinancialData {
+  assets: Asset[]
+  liabilities: Liability[]
+  netWorthHistory: NetWorthHistory[]
+}
+
+// Investment Portfolio Types
+export type InvestmentType = 'stock' | 'bond' | 'etf' | 'mutual_fund' | 'crypto' | 'commodity' | 'reit' | 'cash'
+export type InvestmentAccount = 'taxable' | 'ira' | 'roth_ira' | '401k' | 'hsa' | '529'
+
+export interface Investment {
+  id: string
+  symbol: string
+  name: string
+  type: InvestmentType
+  account: InvestmentAccount
+  shares: number
+  costBasis: number
+  currentPrice: number
+  dateAdded: string
+  notes?: string
+}
+
+export const INVESTMENT_TYPES: { value: InvestmentType; label: string }[] = [
+  { value: 'stock', label: 'Stock' },
+  { value: 'bond', label: 'Bond' },
+  { value: 'etf', label: 'ETF' },
+  { value: 'mutual_fund', label: 'Mutual Fund' },
+  { value: 'crypto', label: 'Cryptocurrency' },
+  { value: 'commodity', label: 'Commodity' },
+  { value: 'reit', label: 'REIT' },
+  { value: 'cash', label: 'Cash/Money Market' },
+]
+
+export const INVESTMENT_ACCOUNTS: { value: InvestmentAccount; label: string }[] = [
+  { value: 'taxable', label: 'Taxable Brokerage' },
+  { value: 'ira', label: 'Traditional IRA' },
+  { value: 'roth_ira', label: 'Roth IRA' },
+  { value: '401k', label: '401(k)' },
+  { value: 'hsa', label: 'HSA' },
+  { value: '529', label: '529 Plan' },
+]
+
+export const ASSET_TYPES: { value: AssetType; label: string; icon: string }[] = [
+  { value: 'cash', label: 'Cash & Savings', icon: 'Wallet' },
+  { value: 'investment', label: 'Investment Accounts', icon: 'TrendingUp' },
+  { value: 'retirement', label: 'Retirement Accounts', icon: 'Shield' },
+  { value: 'real_estate', label: 'Real Estate', icon: 'Home' },
+  { value: 'vehicle', label: 'Vehicles', icon: 'Car' },
+  { value: 'other', label: 'Other', icon: 'Package' },
+]
+
+export const LIABILITY_TYPES: { value: LiabilityType; label: string; icon: string }[] = [
+  { value: 'mortgage', label: 'Mortgage', icon: 'Home' },
+  { value: 'auto_loan', label: 'Auto Loan', icon: 'Car' },
+  { value: 'credit_card', label: 'Credit Card', icon: 'CreditCard' },
+  { value: 'student_loan', label: 'Student Loan', icon: 'GraduationCap' },
+  { value: 'personal_loan', label: 'Personal Loan', icon: 'User' },
+  { value: 'other', label: 'Other', icon: 'Package' },
+]
+
+// Savings Goals Types
+export type SavingsGoalType = 'emergency' | 'vacation' | 'home' | 'vehicle' | 'education' | 'retirement' | 'other'
+export type SavingsPriority = 'low' | 'medium' | 'high'
+
+export interface SavingsGoal {
+  id: string
+  name: string
+  type: SavingsGoalType
+  targetAmount: number
+  currentAmount: number
+  targetDate?: string
+  priority: SavingsPriority
+  dateCreated: string
+  notes?: string
+}
+
+export const SAVINGS_GOAL_TYPES: { value: SavingsGoalType; label: string; icon: string }[] = [
+  { value: 'emergency', label: 'Emergency Fund', icon: 'Shield' },
+  { value: 'vacation', label: 'Vacation', icon: 'Plane' },
+  { value: 'home', label: 'Home', icon: 'Home' },
+  { value: 'vehicle', label: 'Vehicle', icon: 'Car' },
+  { value: 'education', label: 'Education', icon: 'GraduationCap' },
+  { value: 'retirement', label: 'Retirement', icon: 'Target' },
+  { value: 'other', label: 'Other', icon: 'Package' },
+]
+
+export const SAVINGS_PRIORITIES: { value: SavingsPriority; label: string }[] = [
+  { value: 'high', label: 'High' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'low', label: 'Low' },
+]
+
+// Budget Planner Types
+export type BudgetCategory =
+  | 'travel'
+  | 'accommodation'
+  | 'food'
+  | 'transportation'
+  | 'activities'
+  | 'shopping'
+  | 'other'
+
+export interface BudgetLineItem {
+  id: string
+  category: BudgetCategory
+  label: string
+  amount: number
+}
+
+export interface BudgetScenario {
+  id: string
+  name: string
+  description?: string
+  budgetLimit?: number
+  lineItems: BudgetLineItem[]
+  dateCreated: string
+  dateModified: string
+}
+
+export const BUDGET_CATEGORIES: {
+  value: BudgetCategory
+  label: string
+  icon: string
+}[] = [
+  { value: 'travel', label: 'Travel', icon: 'Plane' },
+  { value: 'accommodation', label: 'Accommodation', icon: 'Home' },
+  { value: 'food', label: 'Food & Dining', icon: 'UtensilsCrossed' },
+  { value: 'transportation', label: 'Transportation', icon: 'Car' },
+  { value: 'activities', label: 'Activities', icon: 'Ticket' },
+  { value: 'shopping', label: 'Shopping', icon: 'ShoppingBag' },
+  { value: 'other', label: 'Other', icon: 'MoreHorizontal' },
+]
+
+// Cash Accounts Types
+export interface CashAccount {
+  id: string
+  name: string
+  amount: number
+  dateAdded: string
+  notes?: string
+}
