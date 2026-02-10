@@ -202,7 +202,20 @@ export const translations = {
     game_memoryMatch: 'Memory Match',
     game_memoryMatch_desc: 'Ordne Finanzbegriffe und Konzepte zu!',
     miniGames_comingSoon: 'Demnächst',
-    
+
+    // Watchlist
+    watchlist: 'Watchlist',
+    yourWatchlist: 'Deine Watchlist',
+    addToWatchlist: 'Zur Watchlist hinzufügen',
+    editWatchlistItem: 'Watchlist-Eintrag bearbeiten',
+    noWatchlistItems: 'Noch keine Einträge in der Watchlist. Füge deine ersten Watchlist-Investitionen hinzu.',
+    targetPrice: 'Zielpreis',
+    potentialValue: 'Potenzieller Wert',
+    promoteToHolding: 'Zu Bestand erheben',
+    demoteToWatchlist: 'Zur Watchlist zurückstufen',
+    currentPrice: 'Aktueller Preis',
+    updatePrice: 'Preis aktualisieren',
+
     // Charts
     netWorthTrend: 'Nettovermögen-Trend',
     assetAllocation: 'Vermögenswert-Allokation',
@@ -569,7 +582,20 @@ export const translations = {
     game_memoryMatch: 'Memory Match',
     game_memoryMatch_desc: 'Match financial terms and concepts!',
     miniGames_comingSoon: 'Coming Soon',
-    
+
+    // Watchlist
+    watchlist: 'Watchlist',
+    yourWatchlist: 'Your Watchlist',
+    addToWatchlist: 'Add to Watchlist',
+    editWatchlistItem: 'Edit Watchlist Item',
+    noWatchlistItems: 'No watchlist items yet. Add your first watchlist investments to get started.',
+    targetPrice: 'Target Price',
+    potentialValue: 'Potential Value',
+    promoteToHolding: 'Promote to Holding',
+    demoteToWatchlist: 'Demote to Watchlist',
+    currentPrice: 'Current Price',
+    updatePrice: 'Update Price',
+
     // Charts
     netWorthTrend: 'Net Worth Trend',
     assetAllocation: 'Asset Allocation',

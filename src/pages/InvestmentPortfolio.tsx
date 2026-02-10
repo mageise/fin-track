@@ -15,6 +15,7 @@ import {
 import {
   ArrowLeft,
   Plus,
+  SquarePlus,
   TrendingUp,
   TrendingDown,
   DollarSign,
@@ -33,6 +34,7 @@ import {
   ChevronDown,
   Banknote,
   PieChart as PieChartIcon,
+  Eye,
 } from 'lucide-react'
 import { useFinancial } from '../contexts/FinancialContext'
 import { Card } from '../components/Card'
@@ -40,7 +42,8 @@ import { CollapsibleSection } from '../components/CollapsibleSection'
 import { InvestmentForm } from '../components/InvestmentForm'
 import { CSVImportDialog } from '../components/CSVImportDialog'
 import { CashAccountForm } from '../components/CashAccountForm'
-import { INVESTMENT_TYPES, INVESTMENT_ACCOUNTS, type Investment } from '../types/financial'
+import { WatchlistForm } from '../components/WatchlistForm'
+import { INVESTMENT_TYPES, INVESTMENT_ACCOUNTS, type Investment, type WatchlistItem } from '../types/financial'
 import { fetchMultiplePrices, type BatchUpdateResult } from '../services/yahooFinance'
 import { useTranslation } from '../hooks/useTranslation'
 import { useFormatters } from '../hooks/useFormatters'
@@ -75,6 +78,7 @@ export function InvestmentPortfolio() {
     deleteInvestment,
     bulkUpdateInvestmentPrices,
     setLastPriceUpdate,
+    demoteHoldingToWatchlist,
     totalInvestmentValue,
     totalInvestmentGain,
     totalCashAmount,
@@ -180,6 +184,14 @@ export function InvestmentPortfolio() {
     } finally {
       setUpdatingPriceId(null)
     }
+  }
+
+  const handleDemoteToWatchlist = (investment: Investment) => {
+    demoteHoldingToWatchlist(investment.id, {
+      shares: investment.shares,
+      targetPrice: investment.currentPrice,
+      notes: investment.notes,
+    })
   }
 
   // Handle price update
@@ -724,6 +736,13 @@ export function InvestmentPortfolio() {
                               )}
                             </button>
                             <button
+                              onClick={() => handleDemoteToWatchlist(investment)}
+                              className="p-1 text-gray-600 hover:text-orange-600 transition-colors"
+                              title={t('demoteToWatchlist')}
+                            >
+                              <TrendingDown className="w-4 h-4" />
+                            </button>
+                            <button
                               onClick={() => setEditingInvestment(investment.id)}
                               className="p-1 text-gray-600 hover:text-purple-600 transition-colors"
                               title="Edit"
@@ -766,7 +785,329 @@ export function InvestmentPortfolio() {
             </div>
           )}
         </Card>
+
+        {/* Watchlist Section */}
+        <div className="mt-8">
+          <WatchlistSection />
+        </div>
       </div>
+    </div>
+  )
+}
+
+// Watchlist Section Component
+function WatchlistSection() {
+  const { t } = useTranslation()
+  const { formatCurrency, formatNumber } = useFormatters()
+  const { state, addWatchlistItem, updateWatchlistItem, deleteWatchlistItem, promoteWatchlistToHolding, bulkUpdateWatchlistPrices, setLastPriceUpdate } = useFinancial()
+  const [showForm, setShowForm] = useState(false)
+  const [editingItem, setEditingItem] = useState<string | null>(null)
+  const [updatingPriceId, setUpdatingPriceId] = useState<string | null>(null)
+  const [sortColumn, setSortColumn] = useState<string | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
+    }
+  }
+
+  const sortedWatchlist = useMemo(() => {
+    if (!sortColumn) return state.watchlist
+
+    return [...state.watchlist].sort((a, b) => {
+      let valueA: number | string
+      let valueB: number | string
+
+      switch (sortColumn) {
+        case 'name':
+          valueA = a.name.toLowerCase()
+          valueB = b.name.toLowerCase()
+          break
+        case 'symbol':
+          valueA = a.symbol.toLowerCase()
+          valueB = b.symbol.toLowerCase()
+          break
+        case 'shares':
+          valueA = a.shares
+          valueB = b.shares
+          break
+        case 'targetPrice':
+          valueA = a.targetPrice
+          valueB = b.targetPrice
+          break
+        case 'currentPrice':
+          valueA = a.currentPrice || 0
+          valueB = b.currentPrice || 0
+          break
+        case 'potentialValue':
+          valueA = a.shares * a.targetPrice
+          valueB = b.shares * b.targetPrice
+          break
+        default:
+          return 0
+      }
+
+      if (typeof valueA === 'string' && typeof valueB === 'string') {
+        return sortDirection === 'asc' 
+          ? valueA.localeCompare(valueB) 
+          : valueB.localeCompare(valueA)
+      }
+
+      return sortDirection === 'asc' 
+        ? (valueA as number) - (valueB as number)
+        : (valueB as number) - (valueA as number)
+    })
+  }, [state.watchlist, sortColumn, sortDirection])
+
+  const handleUpdatePrice = async (item: WatchlistItem) => {
+    setUpdatingPriceId(item.id)
+    try {
+      const { fetchMultiplePrices } = await import('../services/yahooFinance')
+      const result = await fetchMultiplePrices([item.symbol])
+      
+      if (result.successful.length > 0 && result.successful[0].price) {
+        bulkUpdateWatchlistPrices([{
+          symbol: item.symbol,
+          price: result.successful[0].price,
+        }])
+        setLastPriceUpdate(new Date().toISOString())
+      }
+    } catch (error) {
+      console.error('Failed to update price:', error)
+    } finally {
+      setUpdatingPriceId(null)
+    }
+  }
+
+  const handlePromoteToHolding = (item: WatchlistItem) => {
+    const defaultType = 'stock'
+    const defaultAccount = 'taxable'
+    
+    promoteWatchlistToHolding(item.id, {
+      type: defaultType,
+      account: defaultAccount,
+      shares: item.shares || 0,
+      costBasis: item.currentPrice || item.targetPrice || 0,
+      currentPrice: item.currentPrice || item.targetPrice || 0,
+      notes: item.notes,
+    })
+  }
+
+  if (state.watchlist.length === 0 && !showForm) {
+    return (
+      <div className="mt-8">
+        <Card className="overflow-hidden">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">{t('watchlist')}</h3>
+            <button
+              onClick={() => setShowForm(true)}
+              className="text-purple-600 transition-colors"
+              title={t('addToWatchlist')}
+            >
+              <SquarePlus className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="text-center py-12 text-gray-500">
+            <Eye className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+            <p className="text-lg font-medium">{t('noWatchlistItems')}</p>
+          </div>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-8">
+      <Card className="overflow-hidden">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-800">{t('yourWatchlist')} ({state.watchlist.length})</h3>
+          <button
+            onClick={() => setShowForm(true)}
+            className="text-purple-600 transition-colors"
+            title={t('addToWatchlist')}
+          >
+            <SquarePlus className="w-6 h-6" />
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th 
+                  className="text-left px-4 py-3 text-sm font-medium text-gray-600 cursor-pointer hover:text-purple-600 hover:bg-gray-100 transition-colors min-w-[300px]"
+                  onClick={() => handleSort('name')}
+                >
+                  <div className="flex items-center gap-1">
+                    {t('nameHeader')}
+                    {sortColumn === 'name' && (
+                      sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                    )}
+                    {sortColumn !== 'name' && <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                  </div>
+                </th>
+                <th 
+                  className="text-right px-4 py-3 text-sm font-medium text-gray-600 cursor-pointer hover:text-purple-600 hover:bg-gray-100 transition-colors whitespace-nowrap"
+                  onClick={() => handleSort('shares')}
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    {t('sharesHeader')}
+                    {sortColumn === 'shares' && (
+                      sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                    )}
+                    {sortColumn !== 'shares' && <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                  </div>
+                </th>
+                <th 
+                  className="text-right px-4 py-3 text-sm font-medium text-gray-600 cursor-pointer hover:text-purple-600 hover:bg-gray-100 transition-colors whitespace-nowrap"
+                  onClick={() => handleSort('targetPrice')}
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    {t('targetPrice')}
+                    {sortColumn === 'targetPrice' && (
+                      sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                    )}
+                    {sortColumn !== 'targetPrice' && <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                  </div>
+                </th>
+                <th 
+                  className="text-right px-4 py-3 text-sm font-medium text-gray-600 cursor-pointer hover:text-purple-600 hover:bg-gray-100 transition-colors whitespace-nowrap"
+                  onClick={() => handleSort('currentPrice')}
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    {t('currentPrice')}
+                    {sortColumn === 'currentPrice' && (
+                      sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                    )}
+                    {sortColumn !== 'currentPrice' && <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                  </div>
+                </th>
+                <th 
+                  className="text-right px-4 py-3 text-sm font-medium text-gray-600 cursor-pointer hover:text-purple-600 hover:bg-gray-100 transition-colors whitespace-nowrap"
+                  onClick={() => handleSort('potentialValue')}
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    {t('potentialValue')}
+                    {sortColumn === 'potentialValue' && (
+                      sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                    )}
+                    {sortColumn !== 'potentialValue' && <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                  </div>
+                </th>
+                <th className="text-center px-4 py-3 text-sm font-medium text-gray-600 whitespace-nowrap">{t('actionsHeader')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedWatchlist.map((item) => {
+                const potentialValue = item.shares * item.targetPrice
+                const currentPrice = item.currentPrice
+                const targetDiff = currentPrice ? ((currentPrice - item.targetPrice) / item.targetPrice) * 100 : null
+
+                return (
+                  <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="px-4 py-3 min-w-[300px]">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={generateAvatarSVG(item.symbol)}
+                          alt={item.symbol}
+                          className="w-10 h-10 rounded-full"
+                          title={item.symbol}
+                        />
+                        <div>
+                          <div className="font-medium">{item.name}</div>
+                          <div className="text-xs text-gray-500">{item.symbol}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">{formatNumber(item.shares)}</td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">{formatCurrency(item.targetPrice)}</td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-2">
+                        <span>{currentPrice ? formatCurrency(currentPrice) : '-'}</span>
+                        <button
+                          onClick={() => handleUpdatePrice(item)}
+                          disabled={updatingPriceId === item.id}
+                          className="text-gray-600 hover:text-blue-600 transition-colors disabled:opacity-50"
+                          title={t('updatePrice')}
+                        >
+                          {updatingPriceId === item.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                      {targetDiff !== null && (
+                        <div className={`text-xs ${targetDiff <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {targetDiff <= 0 ? '' : '+'}{targetDiff.toFixed(2)}%
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right font-medium whitespace-nowrap">{formatCurrency(potentialValue)}</td>
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      <div className="flex justify-center gap-2">
+                        <button
+                          onClick={() => handlePromoteToHolding(item)}
+                          className="p-1 text-gray-600 hover:text-green-600 transition-colors"
+                          title={t('promoteToHolding')}
+                        >
+                          <TrendingUp className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setEditingItem(item.id)}
+                          className="p-1 text-gray-600 hover:text-purple-600 transition-colors"
+                          title={t('edit')}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteWatchlistItem(item.id)}
+                          className="p-1 text-gray-600 hover:text-red-600 transition-colors"
+                          title={t('delete')}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Add Form Modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold mb-4">{t('addToWatchlist')}</h2>
+            <WatchlistForm
+              onClose={() => setShowForm(false)}
+              onAdd={addWatchlistItem}
+              onUpdate={updateWatchlistItem}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Edit Form Modal */}
+      {editingItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold mb-4">{t('editWatchlistItem')}</h2>
+            <WatchlistForm
+              watchlistItem={state.watchlist.find((i) => i.id === editingItem)}
+              onClose={() => setEditingItem(null)}
+              onAdd={addWatchlistItem}
+              onUpdate={updateWatchlistItem}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

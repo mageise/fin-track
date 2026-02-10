@@ -52,6 +52,17 @@ export interface Investment {
   notes?: string
 }
 
+export interface WatchlistItem {
+  id: string
+  symbol: string
+  name: string
+  shares: number
+  targetPrice: number
+  currentPrice?: number
+  dateAdded: string
+  notes?: string
+}
+
 export const INVESTMENT_TYPES: { value: InvestmentType; translationKey: TranslationKey }[] = [
   { value: 'stock', translationKey: 'investmentType_stock' },
   { value: 'bond', translationKey: 'investmentType_bond' },

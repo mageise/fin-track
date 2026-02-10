@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, useEffect, useRef, type ReactNode } from 'react'
-import type { Asset, Liability, NetWorthHistory, Investment, SavingsGoal, BudgetScenario, CashAccount } from '../types/financial'
+import type { Asset, Liability, NetWorthHistory, Investment, SavingsGoal, BudgetScenario, CashAccount, WatchlistItem } from '../types/financial'
 
 export type Locale = 'de' | 'en'
 export type Currency = 'EUR' | 'USD'
@@ -11,6 +11,7 @@ interface FinancialState {
   savingsGoals: SavingsGoal[]
   budgetScenarios: BudgetScenario[]
   cashAccounts: CashAccount[]
+  watchlist: WatchlistItem[]
   netWorthHistory: NetWorthHistory[]
   fireGoal: number
   lastPriceUpdate: string | null
@@ -41,6 +42,12 @@ type Action =
   | { type: 'ADD_CASH_ACCOUNT'; payload: CashAccount }
   | { type: 'UPDATE_CASH_ACCOUNT'; payload: CashAccount }
   | { type: 'DELETE_CASH_ACCOUNT'; payload: string }
+  | { type: 'ADD_WATCHLIST_ITEM'; payload: WatchlistItem }
+  | { type: 'UPDATE_WATCHLIST_ITEM'; payload: WatchlistItem }
+  | { type: 'DELETE_WATCHLIST_ITEM'; payload: string }
+  | { type: 'PROMOTE_WATCHLIST_TO_HOLDING'; payload: { watchlistId: string; investmentData: Omit<Investment, 'id' | 'dateAdded' | 'symbol' | 'name'> } }
+  | { type: 'DEMOTE_HOLDING_TO_WATCHLIST'; payload: { investmentId: string; watchlistData: Omit<WatchlistItem, 'id' | 'dateAdded' | 'symbol' | 'name' | 'currentPrice'> } }
+  | { type: 'UPDATE_WATCHLIST_PRICES'; payload: { symbol: string; price: number }[] }
   | { type: 'SET_LAST_PRICE_UPDATE'; payload: string }
   | { type: 'SET_FIRE_GOAL'; payload: number }
   | { type: 'SET_LOCALE'; payload: Locale }
@@ -57,6 +64,7 @@ const defaultState: FinancialState = {
   savingsGoals: [],
   budgetScenarios: [],
   cashAccounts: [],
+  watchlist: [],
   netWorthHistory: [],
   fireGoal: 1000000,
   lastPriceUpdate: null,
@@ -81,6 +89,7 @@ function loadInitialState(): FinancialState {
         savingsGoals: parsed.savingsGoals || [],
         budgetScenarios: parsed.budgetScenarios || [],
         cashAccounts: parsed.cashAccounts || [],
+        watchlist: parsed.watchlist || [],
         lastPriceUpdate: parsed.lastPriceUpdate || null,
         locale: parsed.locale || 'de',
         currency: parsed.currency || 'EUR',
@@ -259,6 +268,71 @@ function financialReducer(state: FinancialState, action: Action): FinancialState
         ...state,
         cashAccounts: state.cashAccounts.filter((account) => account.id !== action.payload),
       }
+    case 'ADD_WATCHLIST_ITEM':
+      return {
+        ...state,
+        watchlist: [...state.watchlist, action.payload],
+      }
+    case 'UPDATE_WATCHLIST_ITEM':
+      return {
+        ...state,
+        watchlist: state.watchlist.map((item) =>
+          item.id === action.payload.id ? action.payload : item
+        ),
+      }
+    case 'DELETE_WATCHLIST_ITEM':
+      return {
+        ...state,
+        watchlist: state.watchlist.filter((item) => item.id !== action.payload),
+      }
+    case 'UPDATE_WATCHLIST_PRICES': {
+      const priceMap = new Map(action.payload.map(p => [p.symbol.toUpperCase(), p.price]))
+      return {
+        ...state,
+        watchlist: state.watchlist.map((item) => {
+          const newPrice = priceMap.get(item.symbol.toUpperCase())
+          if (newPrice !== undefined) {
+            return { ...item, currentPrice: newPrice }
+          }
+          return item
+        }),
+      }
+    }
+    case 'PROMOTE_WATCHLIST_TO_HOLDING': {
+      const watchlistItem = state.watchlist.find((item) => item.id === action.payload.watchlistId)
+      if (!watchlistItem) return state
+      
+      const newInvestment: Investment = {
+        ...action.payload.investmentData,
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+        symbol: watchlistItem.symbol,
+        name: watchlistItem.name,
+        dateAdded: new Date().toISOString(),
+      }
+      return {
+        ...state,
+        watchlist: state.watchlist.filter((item) => item.id !== action.payload.watchlistId),
+        investments: [...state.investments, newInvestment],
+      }
+    }
+    case 'DEMOTE_HOLDING_TO_WATCHLIST': {
+      const investment = state.investments.find((inv) => inv.id === action.payload.investmentId)
+      if (!investment) return state
+      
+      const newWatchlistItem: WatchlistItem = {
+        ...action.payload.watchlistData,
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+        symbol: investment.symbol,
+        name: investment.name,
+        currentPrice: investment.currentPrice,
+        dateAdded: new Date().toISOString(),
+      }
+      return {
+        ...state,
+        investments: state.investments.filter((inv) => inv.id !== action.payload.investmentId),
+        watchlist: [...state.watchlist, newWatchlistItem],
+      }
+    }
     case 'SET_FIRE_GOAL':
       return { ...state, fireGoal: action.payload }
     case 'SET_LOCALE':
@@ -274,6 +348,7 @@ function financialReducer(state: FinancialState, action: Action): FinancialState
         savingsGoals: action.payload.savingsGoals || [],
         budgetScenarios: action.payload.budgetScenarios || [],
         cashAccounts: action.payload.cashAccounts || [],
+        watchlist: action.payload.watchlist || [],
         lastPriceUpdate: action.payload.lastPriceUpdate || null,
         locale: action.payload.locale || 'de',
         currency: action.payload.currency || 'EUR',
@@ -307,6 +382,12 @@ interface FinancialContextType {
   addCashAccount: (account: Omit<CashAccount, 'id' | 'dateAdded'>) => void
   updateCashAccount: (account: CashAccount) => void
   deleteCashAccount: (id: string) => void
+  addWatchlistItem: (item: Omit<WatchlistItem, 'id' | 'dateAdded'>) => void
+  updateWatchlistItem: (item: WatchlistItem) => void
+  deleteWatchlistItem: (id: string) => void
+  promoteWatchlistToHolding: (watchlistId: string, investmentData: Omit<Investment, 'id' | 'dateAdded' | 'symbol' | 'name'>) => void
+  demoteHoldingToWatchlist: (investmentId: string, watchlistData: Omit<WatchlistItem, 'id' | 'dateAdded' | 'symbol' | 'name' | 'currentPrice'>) => void
+  bulkUpdateWatchlistPrices: (updates: { symbol: string; price: number }[]) => void
   setLastPriceUpdate: (timestamp: string) => void
   setFireGoal: (goal: number) => void
   setLocale: (locale: Locale) => void
@@ -517,6 +598,35 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'DELETE_CASH_ACCOUNT', payload: id })
   }
 
+  const addWatchlistItem = (item: Omit<WatchlistItem, 'id' | 'dateAdded'>) => {
+    const newItem: WatchlistItem = {
+      ...item,
+      id: generateId(),
+      dateAdded: new Date().toISOString(),
+    }
+    dispatch({ type: 'ADD_WATCHLIST_ITEM', payload: newItem })
+  }
+
+  const updateWatchlistItem = (item: WatchlistItem) => {
+    dispatch({ type: 'UPDATE_WATCHLIST_ITEM', payload: item })
+  }
+
+  const deleteWatchlistItem = (id: string) => {
+    dispatch({ type: 'DELETE_WATCHLIST_ITEM', payload: id })
+  }
+
+  const promoteWatchlistToHolding = (watchlistId: string, investmentData: Omit<Investment, 'id' | 'dateAdded' | 'symbol' | 'name'>) => {
+    dispatch({ type: 'PROMOTE_WATCHLIST_TO_HOLDING', payload: { watchlistId, investmentData } })
+  }
+
+  const demoteHoldingToWatchlist = (investmentId: string, watchlistData: Omit<WatchlistItem, 'id' | 'dateAdded' | 'symbol' | 'name' | 'currentPrice'>) => {
+    dispatch({ type: 'DEMOTE_HOLDING_TO_WATCHLIST', payload: { investmentId, watchlistData } })
+  }
+
+  const bulkUpdateWatchlistPrices = (updates: { symbol: string; price: number }[]) => {
+    dispatch({ type: 'UPDATE_WATCHLIST_PRICES', payload: updates })
+  }
+
   const totalAssets = state.assets.reduce((sum, asset) => sum + asset.value, 0)
   const totalLiabilities = state.liabilities.reduce((sum, liability) => sum + liability.value, 0)
   const netWorth = totalAssets - totalLiabilities
@@ -558,6 +668,12 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         addCashAccount,
         updateCashAccount,
         deleteCashAccount,
+        addWatchlistItem,
+        updateWatchlistItem,
+        deleteWatchlistItem,
+        promoteWatchlistToHolding,
+        demoteHoldingToWatchlist,
+        bulkUpdateWatchlistPrices,
         setLastPriceUpdate,
         setFireGoal,
         setLocale,
