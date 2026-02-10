@@ -7,6 +7,7 @@ import { InvestmentPortfolio } from './pages/InvestmentPortfolio'
 import { Savings } from './pages/Savings'
 import { Budget } from './pages/Budget'
 import { Settings } from './pages/Settings'
+import { Games } from './pages/Games'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 export function AppContent() {
@@ -21,6 +22,7 @@ export function AppContent() {
           <Route path="/savings" element={<Savings />} />
           <Route path="/budget" element={<Budget />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/games" element={<Games />} />
         </Routes>
       </FinancialProvider>
     </ErrorBoundary>

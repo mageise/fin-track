@@ -188,8 +188,20 @@ export const translations = {
     tool_risk: 'Risikobewertung',
     tool_export: 'Daten Export/Import',
     tool_history: 'Nettovermögens-Historie',
-    tool_allocation: 'Asset-Allokation',
+    tool_miniGames: 'Mini-Spiele',
     tool_settings: 'Einstellungen',
+
+    // Mini Games
+    miniGamesSubtitle: 'Wähle ein Spiel zum Spielen!',
+    game_tictactoe: 'Tic-Tac-Toe',
+    game_tictactoe_desc: 'Klassisches Strategiespiel - 3 in einer Reihe!',
+    game_financeQuiz: 'Finanz-Quiz',
+    game_financeQuiz_desc: 'Teste dein Finanzwissen!',
+    game_breakout: 'Breakout',
+    game_breakout_desc: 'Zerstöre alle Steine!',
+    game_memoryMatch: 'Memory Match',
+    game_memoryMatch_desc: 'Ordne Finanzbegriffe und Konzepte zu!',
+    miniGames_comingSoon: 'Demnächst',
     
     // Charts
     netWorthTrend: 'Nettovermögen-Trend',
@@ -543,8 +555,20 @@ export const translations = {
     tool_risk: 'Risk Assessment',
     tool_export: 'Data Export/Import',
     tool_history: 'Net Worth History',
-    tool_allocation: 'Asset Allocation',
+    tool_miniGames: 'Mini Games',
     tool_settings: 'Settings',
+
+    // Mini Games
+    miniGamesSubtitle: 'Choose a game to play!',
+    game_tictactoe: 'Tic-Tac-Toe',
+    game_tictactoe_desc: 'Classic strategy game - get 3 in a row!',
+    game_financeQuiz: 'Finance Quiz',
+    game_financeQuiz_desc: 'Test your financial knowledge!',
+    game_breakout: 'Breakout',
+    game_breakout_desc: 'Break all the bricks!',
+    game_memoryMatch: 'Memory Match',
+    game_memoryMatch_desc: 'Match financial terms and concepts!',
+    miniGames_comingSoon: 'Coming Soon',
     
     // Charts
     netWorthTrend: 'Net Worth Trend',

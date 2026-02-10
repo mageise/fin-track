@@ -1,6 +1,5 @@
 import {
   DollarSign,
-  PieChart,
   TrendingUp,
   Target,
   Receipt,
@@ -14,6 +13,7 @@ import {
   Scale,
   ArrowLeftRight,
   Wallet,
+  Gamepad2,
 } from 'lucide-react'
 import { ToolTile } from '../components/ToolTile'
 import { useTranslation } from '../hooks/useTranslation'
@@ -142,12 +142,12 @@ export function Toolbox() {
       isPlaceholder: true,
     },
     {
-      id: 'allocation',
-      name: t('tool_allocation'),
-      icon: <PieChart className="w-16 h-16 text-white" />,
-      path: '/allocation',
-      color: 'stone',
-      isPlaceholder: true,
+      id: 'games',
+      name: t('tool_miniGames'),
+      icon: <Gamepad2 className="w-16 h-16 text-white" />,
+      path: '/games',
+      color: 'pink',
+      isPlaceholder: false,
     },
     {
       id: 'settings',
