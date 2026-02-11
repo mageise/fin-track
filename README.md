@@ -15,6 +15,21 @@ A web application to track personal finance, wealth building, and progress towar
 - **Liability Tracking**: Track mortgages, credit cards, loans, and other debts
 - **Persistent Storage**: All data is saved to localStorage for privacy
 
+### Budget Planner
+- **Monthly Budget Management**: Create and manage budgets across categories
+- **Spending Analysis**: Track expenses against budget limits
+- **Category Tracking**: Organize spending by category (food, travel, accommodation, etc.)
+
+### Investment Portfolio
+- **Holdings Management**: Track stocks, bonds, ETFs, crypto, and more
+- **Watchlist**: Monitor potential investments and promote to holdings
+- **Performance Analytics**: Track gains/losses, returns, and top performers
+
+### Savings Goals
+- **Goal Tracking**: Set and monitor savings targets
+- **Priority Organization**: Organize goals by priority (high, medium, low)
+- **Progress Visualization**: See your progress toward each goal
+
 ## Tech Stack
 
 - **React 19** - Modern React with hooks
@@ -71,20 +86,12 @@ npm run preview
 ```
 src/
 ├── components/          # Reusable UI components
-│   ├── Card.tsx        # Card container component
-│   ├── AssetForm.tsx   # Add/edit asset form
-│   └── LiabilityForm.tsx # Add/edit liability form
-├── pages/              # Main app pages
-│   └── Dashboard.tsx   # Net worth dashboard
+├── pages/              # Main app pages (Dashboard, Budget, Investment, Savings, etc.)
 ├── contexts/           # React contexts for state
-│   └── FinancialContext.tsx # Global financial state
 ├── types/              # TypeScript definitions
-│   └── financial.ts    # Financial data types
-├── tests/              # Test files
-│   ├── setup.ts        # Test configuration
-│   └── App.test.tsx    # App component tests
 ├── hooks/              # Custom React hooks
 ├── utils/              # Helper functions
+├── services/           # API services
 ├── App.tsx             # Main App component
 └── index.css           # Global styles
 ```
@@ -113,19 +120,19 @@ src/
 
 ## Roadmap
 
-Future features to add:
-- [ ] Budget tracking and management
-- [ ] Investment portfolio analysis
-- [ ] Savings goals with progress tracking
-- [ ] Monthly/annual reports
-- [ ] Data export/import (JSON/CSV)
-- [ ] Multiple user profiles
-- [ ] Dark mode toggle
-- [ ] Mobile app with offline support
+See [ROADMAP.md](./ROADMAP.md) for the complete feature roadmap with implementation status.
 
-## Contributing
+### Implemented ✓
+- Budget planner
+- Investment portfolio with holdings, watchlist, and performance analytics
+- Savings goals
+- FIRE calculator
 
-Feel free to submit issues and pull requests!
+### Coming Soon
+- Reports and exports
+- Retirement planning
+- Tax calculator
+- Risk assessment
 
 ## License
 
