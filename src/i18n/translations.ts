@@ -49,12 +49,13 @@ export const translations = {
     liabilityNotesLabel: 'Notizen (Optional)',
     
     // Investment Portfolio
+    holdings: 'Positionen',
     portfolioTitle: 'Investment Portfolio',
     portfolioSubtitle: 'Verfolge und analysiere deine Investitionen',
     totalValue: 'Gesamtwert',
     totalCost: 'Gesamtkosten',
     totalGainLoss: 'Gesamter Gewinn/Verlust',
-    returnPercent: 'Rendite %',
+    totalReturn: 'Gesamtrendite',
     addInvestment: 'Investition hinzufügen',
     importInvestments: 'Investitionen importieren',
     updatePrices: 'Alle Preise aktualisieren',
@@ -204,11 +205,10 @@ export const translations = {
     miniGames_comingSoon: 'Demnächst',
 
     // Watchlist
-    watchlist: 'Watchlist',
-    yourWatchlist: 'Deine Watchlist',
-    addToWatchlist: 'Zur Watchlist hinzufügen',
+    watchlist: 'Favoriten',
+    addToWatchlist: 'Zu Favoriten hinzufügen',
     editWatchlistItem: 'Watchlist-Eintrag bearbeiten',
-    noWatchlistItems: 'Noch keine Einträge in der Watchlist. Füge deine ersten Watchlist-Investitionen hinzu.',
+    noWatchlistItems: 'Noch keine Einträge in den Favoriten. Füge deine ersten Favoriten-Investitionen hinzu.',
     targetPrice: 'Zielpreis',
     potentialValue: 'Potenzieller Wert',
     promoteToHolding: 'Zu Bestand erheben',
@@ -318,7 +318,11 @@ export const translations = {
     category_activities: 'Aktivitäten',
     category_shopping: 'Einkaufen',
     category_other: 'Sonstiges',
-    
+
+    // Performance
+    bestPerformer: 'Beste Performance',
+    worstPerformer: 'Schwächste Performance',
+
     // Cash Accounts
     totalPortfolioValue: 'Gesamtwert Portfolio',
     investedValue: 'Investierter Wert',
@@ -429,12 +433,13 @@ export const translations = {
     liabilityNotesLabel: 'Notes (Optional)',
     
     // Investment Portfolio
+    holdings: 'Holdings',
     portfolioTitle: 'Investment Portfolio',
     portfolioSubtitle: 'Track and analyze your investment holdings',
     totalValue: 'Total Value',
     totalCost: 'Total Cost',
     totalGainLoss: 'Total Gain/Loss',
-    returnPercent: 'Return %',
+    totalReturn: 'Total Return',
     addInvestment: 'Add Investment',
     importInvestments: 'Import Investments',
     updatePrices: 'Update All Prices',
@@ -698,7 +703,11 @@ export const translations = {
     category_activities: 'Activities',
     category_shopping: 'Shopping',
     category_other: 'Other',
-    
+
+    // Performance
+    bestPerformer: 'Best Performer',
+    worstPerformer: 'Worst Performer',
+
     // Cash Accounts
     totalPortfolioValue: 'Total Portfolio Value',
     investedValue: 'Invested Value',

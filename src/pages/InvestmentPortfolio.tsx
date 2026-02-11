@@ -1,24 +1,12 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from 'recharts'
+
 import {
   ArrowLeft,
-  Plus,
   SquarePlus,
   TrendingUp,
   TrendingDown,
-  DollarSign,
+  CircleDollarSign,
   Wallet,
   Trash2,
   Edit2,
@@ -27,48 +15,25 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
-  Clock,
-  Upload,
   ArrowUpDown,
   ChevronUp,
   ChevronDown,
-  Banknote,
-  PieChart as PieChartIcon,
   Eye,
+  Upload,
+  Banknote,
 } from 'lucide-react'
 import { useFinancial } from '../contexts/FinancialContext'
 import { Card } from '../components/Card'
-import { CollapsibleSection } from '../components/CollapsibleSection'
+
 import { InvestmentForm } from '../components/InvestmentForm'
 import { CSVImportDialog } from '../components/CSVImportDialog'
-import { CashAccountForm } from '../components/CashAccountForm'
+
 import { WatchlistForm } from '../components/WatchlistForm'
 import { INVESTMENT_TYPES, INVESTMENT_ACCOUNTS, type Investment, type WatchlistItem } from '../types/financial'
 import { fetchMultiplePrices, type BatchUpdateResult } from '../services/yahooFinance'
 import { useTranslation } from '../hooks/useTranslation'
 import { useFormatters } from '../hooks/useFormatters'
 import { generateAvatarSVG } from '../utils/avatar'
-
-const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
-
-function formatRelativeTime(timestamp: string | null): string {
-  if (!timestamp) return 'Never'
-
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffSec = Math.floor(diffMs / 1000)
-  const diffMin = Math.floor(diffSec / 60)
-  const diffHour = Math.floor(diffMin / 60)
-  const diffDay = Math.floor(diffHour / 24)
-
-  if (diffSec < 60) return 'Just now'
-  if (diffMin < 60) return `${diffMin} minute${diffMin === 1 ? '' : 's'} ago`
-  if (diffHour < 24) return `${diffHour} hour${diffHour === 1 ? '' : 's'} ago`
-  if (diffDay < 7) return `${diffDay} day${diffDay === 1 ? '' : 's'} ago`
-
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
 
 export function InvestmentPortfolio() {
   const { t } = useTranslation()
@@ -81,10 +46,24 @@ export function InvestmentPortfolio() {
     demoteHoldingToWatchlist,
     totalInvestmentValue,
     totalInvestmentGain,
-    totalCashAmount,
     totalPortfolioValue,
-    lastPriceUpdate,
+    cashBalance,
+    updateCashBalance,
   } = useFinancial()
+
+  const [isEditingCash, setIsEditingCash] = useState(false)
+  const [cashInput, setCashInput] = useState('')
+
+  const handleEditCash = () => {
+    setIsEditingCash(true)
+    setCashInput(String(cashBalance))
+  }
+
+  const handleSaveCash = () => {
+    const value = parseFloat(cashInput) || 0
+    updateCashBalance(value)
+    setIsEditingCash(false)
+  }
 
   const [showForm, setShowForm] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
@@ -95,72 +74,6 @@ export function InvestmentPortfolio() {
   const [updateError, setUpdateError] = useState<string | null>(null)
   const [sortColumn, setSortColumn] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
-
-  // Calculate allocation by type
-  const allocationByType = useMemo(() => {
-    const typeMap = new Map<string, number>()
-    state.investments.forEach((inv) => {
-      const value = inv.shares * inv.currentPrice
-      const current = typeMap.get(inv.type) || 0
-      typeMap.set(inv.type, current + value)
-    })
-    const result: Array<{ name: string; value: number }> = []
-    // Add cash first (so it gets the green color)
-    if (totalCashAmount > 0) {
-      result.push({ name: 'Cash', value: totalCashAmount })
-    }
-    // Add investments
-    typeMap.forEach((value, type) => {
-      result.push({
-        name: t(INVESTMENT_TYPES.find((item) => item.value === type)?.translationKey || 'investmentType_stock'),
-        value,
-      })
-    })
-    return result
-  }, [state.investments, totalCashAmount, t])
-
-  // Calculate allocation by account
-  const allocationByAccount = useMemo(() => {
-    const accountMap = new Map<string, number>()
-    state.investments.forEach((inv) => {
-      const value = inv.shares * inv.currentPrice
-      const current = accountMap.get(inv.account) || 0
-      accountMap.set(inv.account, current + value)
-    })
-    // Add cash accounts
-    let cashTotal = 0
-    state.cashAccounts.forEach((account) => {
-      cashTotal += account.amount
-    })
-    const result: Array<{ name: string; value: number }> = []
-    // Add cash first (so it gets the green color)
-    if (cashTotal > 0) {
-      result.push({ name: 'Cash Accounts', value: cashTotal })
-    }
-    // Add investment accounts
-    accountMap.forEach((value, account) => {
-      result.push({
-        name: t(INVESTMENT_ACCOUNTS.find((item) => item.value === account)?.translationKey || 'accountType_taxable'),
-        value,
-      })
-    })
-    return result
-  }, [state.investments, state.cashAccounts, t])
-
-  // Calculate performance data for bar chart
-  const performanceData = useMemo(() => {
-    return state.investments.map((inv) => {
-      const currentValue = inv.shares * inv.currentPrice
-      const costBasis = inv.shares * inv.costBasis
-      const gain = currentValue - costBasis
-      const gainPercent = costBasis > 0 ? (gain / costBasis) * 100 : 0
-      return {
-        symbol: inv.symbol,
-        gain,
-        gainPercent,
-      }
-    }).sort((a, b) => b.gain - a.gain)
-  }, [state.investments])
 
   // Handle price update for single investment
   const handleUpdateSinglePrice = async (investment: Investment) => {
@@ -398,11 +311,28 @@ export function InvestmentPortfolio() {
           <Card>
             <div className="flex items-center gap-3">
               <div className="p-3 bg-emerald-100 rounded-lg">
-                <DollarSign className="w-6 h-6 text-emerald-600" />
+                <Banknote className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
                 <p className="text-sm text-gray-600">{t('cashOnHand')}</p>
-                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalCashAmount)}</p>
+                {isEditingCash ? (
+                  <input
+                    type="number"
+                    value={cashInput}
+                    onChange={(e) => setCashInput(e.target.value)}
+                    onBlur={handleSaveCash}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSaveCash()}
+                    className="text-2xl font-bold text-emerald-600 border-b border-emerald-600 focus:outline-none w-32 bg-transparent"
+                    autoFocus
+                  />
+                ) : (
+                  <p
+                    onClick={handleEditCash}
+                    className="text-2xl font-bold text-emerald-600 cursor-pointer hover:text-emerald-700"
+                  >
+                    {formatCurrency(cashBalance)}
+                  </p>
+                )}
               </div>
             </div>
           </Card>
@@ -426,142 +356,8 @@ export function InvestmentPortfolio() {
           </Card>
         </div>
 
-        {/* Portfolio Charts Section */}
-        {state.investments.length > 0 && (
-          <CollapsibleSection
-            title={t('portfolioCharts')}
-            subtitle={t('portfolioChartsSubtitle')}
-            icon={PieChartIcon}
-            iconColor="text-purple-600"
-          >
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Allocation by Type */}
-              <Card title={t('allocationByType')}>
-                <div style={{ width: '100%', height: 250 }}>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={allocationByType}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {allocationByType.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => typeof value === 'number' ? formatCurrency(value) : String(value)} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
-
-              {/* Allocation by Account */}
-              <Card title={t('allocationByAccount')}>
-                <div style={{ width: '100%', height: 250 }}>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={allocationByAccount}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {allocationByAccount.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => typeof value === 'number' ? formatCurrency(value) : String(value)} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
-
-              {/* Performance by Holding */}
-              <Card title={t('gainLossByHolding')}>
-                <div style={{ width: '100%', height: 250 }}>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={performanceData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" tickFormatter={(value) => `$${Number(value)}`} />
-                      <YAxis dataKey="symbol" type="category" width={60} />
-                      <Tooltip formatter={(value) => typeof value === 'number' ? formatCurrency(value) : String(value)} />
-                      <Bar
-                        dataKey="gain"
-                        fill="#3b82f6"
-                        radius={[0, 4, 4, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
-            </div>
-          </CollapsibleSection>
-        )}
-
         {/* Status Messages */}
         <StatusMessage />
-
-        {/* Cash Accounts Section */}
-        <div className="mb-8">
-          <CashAccountsSection />
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-4 mb-6">
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            {t('addInvestment')}
-          </button>
-
-          <button
-            onClick={() => setShowImportDialog(true)}
-            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
-          >
-            <Upload className="w-4 h-4" />
-            {t('importInvestments')}
-          </button>
-
-          {/* Update Button + Timestamp Group */}
-          {state.investments.length > 0 && (
-            <div className="flex items-center gap-4 ml-auto">
-              {/* Last Updated Timestamp */}
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Clock className="w-4 h-4" />
-                <span>{t('lastUpdated')}: {formatRelativeTime(lastPriceUpdate)}</span>
-              </div>
-
-              <button
-                onClick={handleUpdatePrices}
-                disabled={isUpdating}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isUpdating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    {t('updating')}
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-4 h-4" />
-                    {t('updatePrices')}
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-        </div>
 
         {/* Investment Form Modal */}
         {showForm && (
@@ -579,8 +375,39 @@ export function InvestmentPortfolio() {
         )}
 
         {/* Investments Table */}
-        <Card title={`${t('yourHoldings')} (${state.investments.length})`} className="overflow-hidden">
-          {state.investments.length > 0 ? (
+        {state.investments.length > 0 ? (
+          <Card className="overflow-hidden">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">{t('holdings')} ({state.investments.length})</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleUpdatePrices}
+                  disabled={isUpdating}
+                  className="text-blue-600 disabled:opacity-50"
+                  title={t('updatePrices')}
+                >
+                  {isUpdating ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-6 h-6" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowImportDialog(true)}
+                  className="text-green-600"
+                  title={t('importInvestments')}
+                >
+                  <Upload className="w-6 h-6" />
+                </button>
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="text-purple-600"
+                  title={t('addInvestment')}
+                >
+                  <SquarePlus className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -778,13 +605,34 @@ export function InvestmentPortfolio() {
                 </tbody>
               </table>
             </div>
-          ) : (
+          </Card>
+        ) : (
+          <Card className="overflow-hidden">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">{t('holdings')}</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowImportDialog(true)}
+                  className="text-green-600"
+                  title={t('importInvestments')}
+                >
+                  <Upload className="w-6 h-6" />
+                </button>
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="text-purple-600"
+                  title={t('addInvestment')}
+                >
+                  <SquarePlus className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
             <div className="text-center py-12 text-gray-500">
-              <LineChart className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <CircleDollarSign className="w-16 h-16 mx-auto mb-4 text-gray-300" />
               <p className="text-lg font-medium">{t('noInvestmentsYet')}</p>
             </div>
-          )}
-        </Card>
+          </Card>
+        )}
 
         {/* Watchlist Section */}
         <div className="mt-8">
@@ -866,7 +714,6 @@ function WatchlistSection() {
   const handleUpdatePrice = async (item: WatchlistItem) => {
     setUpdatingPriceId(item.id)
     try {
-      const { fetchMultiplePrices } = await import('../services/yahooFinance')
       const result = await fetchMultiplePrices([item.symbol])
       
       if (result.successful.length > 0 && result.successful[0].price) {
@@ -924,7 +771,7 @@ function WatchlistSection() {
     <div className="mt-8">
       <Card className="overflow-hidden">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">{t('yourWatchlist')} ({state.watchlist.length})</h3>
+          <h3 className="text-lg font-semibold text-gray-800">{t('watchlist')} ({state.watchlist.length})</h3>
           <button
             onClick={() => setShowForm(true)}
             className="text-purple-600 transition-colors"
@@ -1112,114 +959,4 @@ function WatchlistSection() {
   )
 }
 
-// Cash Accounts Section Component
-function CashAccountsSection() {
-  const { t } = useTranslation()
-  const { formatCurrency } = useFormatters()
-  const { state, deleteCashAccount, totalCashAmount } = useFinancial()
-  const [showForm, setShowForm] = useState(false)
-  const [editingAccount, setEditingAccount] = useState<string | null>(null)
 
-  if (state.cashAccounts.length === 0 && !showForm) {
-    return (
-      <div className="mt-8">
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium"
-        >
-          <Plus className="w-4 h-4" />
-          {t('addCashAccount')}
-        </button>
-        
-        {showForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-              <h2 className="text-2xl font-bold mb-4">{t('addCashAccount')}</h2>
-              <CashAccountForm onClose={() => setShowForm(false)} />
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  return (
-    <div className="mt-8">
-      <CollapsibleSection
-        title={t('cashAccounts')}
-        subtitle={t('cashAccountsSubtitle')}
-        icon={Banknote}
-        iconColor="text-emerald-600"
-        rightContent={<span className="text-2xl font-bold text-emerald-600">{formatCurrency(totalCashAmount)}</span>}
-      >
-        <div className="space-y-4">
-          {/* Add Button */}
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            {t('addCashAccount')}
-          </button>
-
-          {/* Cash Accounts List */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {state.cashAccounts.map((account) => (
-              <Card key={account.id} className="relative">
-                <div className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold text-lg text-gray-800">{account.name}</h3>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => setEditingAccount(account.id)}
-                        className="p-1 text-gray-600 hover:text-purple-600 transition-colors"
-                        title={t('edit')}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => deleteCashAccount(account.id)}
-                        className="p-1 text-gray-600 hover:text-red-600 transition-colors"
-                        title={t('delete')}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <p className="text-2xl font-bold text-emerald-600">{formatCurrency(account.amount)}</p>
-                  
-                  {account.notes && (
-                    <p className="text-sm text-gray-500 mt-2">{account.notes}</p>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </CollapsibleSection>
-
-      {/* Add/Edit Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-            <h2 className="text-2xl font-bold mb-4">{t('addCashAccount')}</h2>
-            <CashAccountForm onClose={() => setShowForm(false)} />
-          </div>
-        </div>
-      )}
-
-      {editingAccount && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-            <h2 className="text-2xl font-bold mb-4">{t('editCashAccount')}</h2>
-            <CashAccountForm
-              account={state.cashAccounts.find((a) => a.id === editingAccount)}
-              onClose={() => setEditingAccount(null)}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}

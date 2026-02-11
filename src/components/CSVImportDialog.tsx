@@ -4,7 +4,6 @@ import { Card } from './Card'
 import { INVESTMENT_TYPES, INVESTMENT_ACCOUNTS, type InvestmentType, type InvestmentAccount } from '../types/financial'
 import { useFinancial } from '../contexts/FinancialContext'
 import { useTranslation } from '../hooks/useTranslation'
-import { validateTickerSymbol } from '../services/yahooFinance'
 
 interface ImportPreviewItem {
   id: string
@@ -71,6 +70,26 @@ function parseNumber(value: string): number | null {
   const normalized = value.trim().replace(/\./g, '').replace(',', '.')
   const num = parseFloat(normalized)
   return isNaN(num) ? null : num
+}
+
+/**
+ * Validates ticker symbol format locally
+ * Supports: Stocks (AAPL, MSFT), Crypto (BTC-USD, ETH-USD), International (AIR.PA, SONY)
+ */
+function validateTickerSymbol(symbol: string): boolean {
+  if (!symbol || typeof symbol !== 'string') {
+    return false
+  }
+
+  const trimmed = symbol.trim().toUpperCase()
+
+  // Basic ticker validation rules
+  // - Must be 1-10 characters
+  // - Can contain letters, numbers, hyphens, and dots
+  // - Common patterns: AAPL, BTC-USD, BRK.A, AIR.PA, 12345.X (European exchanges)
+  const tickerPattern = /^[A-Z0-9][A-Z0-9.-]{0,9}$/
+
+  return tickerPattern.test(trimmed)
 }
 
 export function CSVImportDialog({ onClose }: CSVImportDialogProps) {

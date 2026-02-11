@@ -11,9 +11,9 @@ import {
   Database,
   AlertTriangle,
   Scale,
-  ArrowLeftRight,
   Wallet,
   Gamepad2,
+  Activity,
 } from 'lucide-react'
 import { ToolTile } from '../components/ToolTile'
 import { useTranslation } from '../hooks/useTranslation'
@@ -74,19 +74,19 @@ export function Toolbox() {
       isPlaceholder: true,
     },
     {
+      id: 'performance',
+      name: t('tool_performance'),
+      icon: <Activity className="w-16 h-16 text-white" />,
+      path: '/performance',
+      color: 'amber',
+      isPlaceholder: false,
+    },
+    {
       id: 'reports',
       name: t('tool_reports'),
       icon: <TrendingUp className="w-16 h-16 text-white" />,
       path: '/reports',
       color: 'indigo',
-      isPlaceholder: true,
-    },
-    {
-      id: 'performance',
-      name: t('tool_performance'),
-      icon: <ArrowLeftRight className="w-16 h-16 text-white" />,
-      path: '/performance',
-      color: 'pink',
       isPlaceholder: true,
     },
 

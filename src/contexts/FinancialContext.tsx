@@ -18,6 +18,7 @@ interface FinancialState {
   locale: Locale
   currency: Currency
   firstName: string
+  cashBalance: number
 }
 
 type Action =
@@ -53,6 +54,7 @@ type Action =
   | { type: 'SET_LOCALE'; payload: Locale }
   | { type: 'SET_CURRENCY'; payload: Currency }
   | { type: 'SET_FIRST_NAME'; payload: string }
+  | { type: 'SET_CASH_BALANCE'; payload: number }
   | { type: 'LOAD_STATE'; payload: FinancialState }
 
 const STORAGE_KEY = 'fintrack-data-v2'
@@ -71,6 +73,7 @@ const defaultState: FinancialState = {
   locale: 'de',
   currency: 'EUR',
   firstName: '',
+  cashBalance: 0,
 }
 
 // Load initial state from localStorage
@@ -94,6 +97,7 @@ function loadInitialState(): FinancialState {
         locale: parsed.locale || 'de',
         currency: parsed.currency || 'EUR',
         firstName: parsed.firstName || '',
+        cashBalance: parsed.cashBalance ?? 0,
       }
     }
   } catch (e) {
@@ -341,6 +345,8 @@ function financialReducer(state: FinancialState, action: Action): FinancialState
       return { ...state, currency: action.payload }
     case 'SET_FIRST_NAME':
       return { ...state, firstName: action.payload }
+    case 'SET_CASH_BALANCE':
+      return { ...state, cashBalance: action.payload }
     case 'LOAD_STATE':
       return { 
         ...action.payload, 
@@ -393,6 +399,7 @@ interface FinancialContextType {
   setLocale: (locale: Locale) => void
   setCurrency: (currency: Currency) => void
   setFirstName: (firstName: string) => void
+  updateCashBalance: (amount: number) => void
   totalAssets: number
   totalLiabilities: number
   netWorth: number
@@ -405,6 +412,7 @@ interface FinancialContextType {
   overallSavingsProgress: number
   totalCashAmount: number
   totalPortfolioValue: number
+  cashBalance: number
   lastPriceUpdate: string | null
   locale: Locale
   currency: Currency
@@ -525,6 +533,10 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_FIRST_NAME', payload: firstName })
   }
 
+  const updateCashBalance = (amount: number) => {
+    dispatch({ type: 'SET_CASH_BALANCE', payload: amount })
+  }
+
   const addSavingsGoal = (goal: Omit<SavingsGoal, 'id' | 'dateCreated'>) => {
     const newGoal: SavingsGoal = {
       ...goal,
@@ -640,7 +652,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
   const totalSavingsTarget = state.savingsGoals.reduce((sum, goal) => sum + goal.targetAmount, 0)
   const overallSavingsProgress = totalSavingsTarget > 0 ? Math.min((totalSavingsAmount / totalSavingsTarget) * 100, 100) : 0
 
-  const totalCashAmount = state.cashAccounts.reduce((sum, account) => sum + account.amount, 0)
+  const totalCashAmount = state.cashBalance
   const totalPortfolioValue = totalInvestmentValue + totalCashAmount
 
   return (
@@ -679,6 +691,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         setLocale,
         setCurrency,
         setFirstName,
+        updateCashBalance,
         totalAssets,
         totalLiabilities,
         netWorth,
@@ -691,6 +704,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         overallSavingsProgress,
         totalCashAmount,
         totalPortfolioValue,
+        cashBalance: state.cashBalance,
         lastPriceUpdate: state.lastPriceUpdate,
         locale: state.locale,
         currency: state.currency,
