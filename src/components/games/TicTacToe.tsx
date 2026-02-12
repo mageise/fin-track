@@ -1,10 +1,16 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { ArrowLeft, RotateCcw } from 'lucide-react'
+import { useTranslation } from '../../hooks/useTranslation'
+import type { GameDifficulty } from '../../types/games'
 
 interface TicTacToeProps {
   onBack: () => void
-  onScoreUpdate: (score: number) => void
-  highScore: number
+  onScoreUpdate: (score: number, won: boolean, difficulty: GameDifficulty) => void
+  highScores: {
+    easy: number
+    medium: number
+    hard: number
+  }
 }
 
 type Player = 'X' | 'O' | null
@@ -15,13 +21,15 @@ const WINNING_COMBINATIONS = [
   [0, 4, 8], [2, 4, 6], // Diagonals
 ]
 
-export function TicTacToe({ onBack, onScoreUpdate, highScore }: TicTacToeProps) {
+export function TicTacToe({ onBack, onScoreUpdate, highScores }: TicTacToeProps) {
+  const { t } = useTranslation()
   const [board, setBoard] = useState<Player[]>(Array(9).fill(null))
   const [currentPlayer, setCurrentPlayer] = useState<'X' | 'O'>('X')
   const [winner, setWinner] = useState<Player>(null)
   const [winningLine, setWinningLine] = useState<number[]>([])
   const [score, setScore] = useState(0)
-  const [, setGamesPlayed] = useState(0)
+  const [difficulty, setDifficulty] = useState<GameDifficulty>('medium')
+  const [gamesPlayed, setGamesPlayed] = useState(0)
 
   const checkWinner = useCallback((boardState: Player[]): { winner: Player; line: number[] } => {
     for (const combo of WINNING_COMBINATIONS) {
@@ -33,7 +41,17 @@ export function TicTacToe({ onBack, onScoreUpdate, highScore }: TicTacToeProps) 
     return { winner: null, line: [] }
   }, [])
 
-  const getComputerMove = useCallback((currentBoard: Player[]): number => {
+  // Easy AI: Random moves
+  const getEasyMove = useCallback((currentBoard: Player[]): number => {
+    const available = currentBoard.map((cell, i) => cell === null ? i : -1).filter(i => i !== -1)
+    if (available.length > 0) {
+      return available[Math.floor(Math.random() * available.length)]
+    }
+    return -1
+  }, [])
+
+  // Medium AI: Smart strategy (existing implementation)
+  const getMediumMove = useCallback((currentBoard: Player[]): number => {
     // Check for winning move
     for (const combo of WINNING_COMBINATIONS) {
       const [a, b, c] = combo
@@ -79,6 +97,76 @@ export function TicTacToe({ onBack, onScoreUpdate, highScore }: TicTacToeProps) 
     return -1
   }, [])
 
+  // Hard AI: Minimax algorithm - use useRef to handle circular reference
+  const minimaxRef = useRef<((currentBoard: Player[], depth: number, isMaximizing: boolean) => number) | null>(null)
+
+  const minimax = useCallback((currentBoard: Player[], depth: number, isMaximizing: boolean): number => {
+    const { winner } = checkWinner(currentBoard)
+
+    if (winner === 'O') return 10 - depth
+    if (winner === 'X') return depth - 10
+    if (!currentBoard.includes(null)) return 0
+
+    if (isMaximizing) {
+      let bestScore = -Infinity
+      for (let i = 0; i < 9; i++) {
+        if (currentBoard[i] === null) {
+          currentBoard[i] = 'O'
+          const score = minimaxRef.current!(currentBoard, depth + 1, false)
+          currentBoard[i] = null
+          bestScore = Math.max(score, bestScore)
+        }
+      }
+      return bestScore
+    } else {
+      let bestScore = Infinity
+      for (let i = 0; i < 9; i++) {
+        if (currentBoard[i] === null) {
+          currentBoard[i] = 'X'
+          const score = minimaxRef.current!(currentBoard, depth + 1, true)
+          currentBoard[i] = null
+          bestScore = Math.min(score, bestScore)
+        }
+      }
+      return bestScore
+    }
+  }, [checkWinner])
+
+  useEffect(() => {
+    minimaxRef.current = minimax
+  }, [minimax])
+
+  const getHardMove = useCallback((currentBoard: Player[]): number => {
+    let bestScore = -Infinity
+    let bestMove = -1
+
+    for (let i = 0; i < 9; i++) {
+      if (currentBoard[i] === null) {
+        currentBoard[i] = 'O'
+        const score = minimax(currentBoard, 0, false)
+        currentBoard[i] = null
+        if (score > bestScore) {
+          bestScore = score
+          bestMove = i
+        }
+      }
+    }
+
+    return bestMove
+  }, [minimax])
+
+  const getComputerMove = useCallback((currentBoard: Player[]): number => {
+    switch (difficulty) {
+      case 'easy':
+        return getEasyMove(currentBoard)
+      case 'hard':
+        return getHardMove(currentBoard)
+      case 'medium':
+      default:
+        return getMediumMove(currentBoard)
+    }
+  }, [difficulty, getEasyMove, getMediumMove, getHardMove])
+
   const handleClick = (index: number) => {
     if (board[index] || winner || currentPlayer !== 'X') return
 
@@ -93,12 +181,15 @@ export function TicTacToe({ onBack, onScoreUpdate, highScore }: TicTacToeProps) 
       if (gameWinner === 'X') {
         const newScore = score + 100
         setScore(newScore)
-        onScoreUpdate(newScore)
+        onScoreUpdate(newScore, true, difficulty)
+      } else {
+        onScoreUpdate(score, false, difficulty)
       }
       setGamesPlayed(prev => prev + 1)
     } else if (!newBoard.includes(null)) {
       setWinner('draw' as Player)
       setGamesPlayed(prev => prev + 1)
+      onScoreUpdate(score, false, difficulty)
     } else {
       setCurrentPlayer('O')
       // Computer's turn
@@ -114,9 +205,11 @@ export function TicTacToe({ onBack, onScoreUpdate, highScore }: TicTacToeProps) 
             setWinner(computerWinner)
             setWinningLine(computerLine)
             setGamesPlayed(prev => prev + 1)
+            onScoreUpdate(score, false, difficulty)
           } else if (!computerBoard.includes(null)) {
             setWinner('draw' as Player)
             setGamesPlayed(prev => prev + 1)
+            onScoreUpdate(score, false, difficulty)
           } else {
             setCurrentPlayer('X')
           }
@@ -141,16 +234,28 @@ export function TicTacToe({ onBack, onScoreUpdate, highScore }: TicTacToeProps) 
           className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
         >
           <ArrowLeft className="w-5 h-5" />
-          Back to Games
+          {t('backToGames')}
         </button>
         <div className="flex items-center gap-4">
+          {/* Difficulty Selector */}
+          <select
+            value={difficulty}
+            onChange={(e) => setDifficulty(e.target.value as GameDifficulty)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={gamesPlayed > 0}
+          >
+            <option value="easy">{t('easy')}</option>
+            <option value="medium">{t('medium')}</option>
+            <option value="hard">{t('hard')}</option>
+          </select>
+          
           <div className="text-right">
-            <div className="text-sm text-gray-600">Score</div>
+            <div className="text-sm text-gray-600">{t('score')}</div>
             <div className="text-2xl font-bold text-blue-600">{score}</div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-600">Best</div>
-            <div className="text-2xl font-bold text-purple-600">{highScore}</div>
+            <div className="text-sm text-gray-600">{t('best')} ({t(difficulty)})</div>
+            <div className="text-2xl font-bold text-purple-600">{highScores[difficulty]}</div>
           </div>
         </div>
       </div>
@@ -162,20 +267,20 @@ export function TicTacToe({ onBack, onScoreUpdate, highScore }: TicTacToeProps) 
             <div className={`text-3xl font-bold mb-2 ${
               winner === 'X' ? 'text-green-600' : winner === 'O' ? 'text-red-600' : 'text-gray-600'
             }`}>
-              {winner === 'X' ? '🎉 You Win!' : winner === 'O' ? '😔 Computer Wins' : "🤝 It's a Draw!"}
+              {winner === 'X' ? `🎉 ${t('youWin')}` : winner === 'O' ? `😔 ${t('computerWins')}` : `🤝 ${t('itsADraw')}`}
             </div>
             <button
               onClick={resetGame}
               className="flex items-center gap-2 mx-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               <RotateCcw className="w-4 h-4" />
-              Play Again
+              {t('playAgain')}
             </button>
           </div>
         ) : (
           <div className="text-center">
             <div className="text-xl font-semibold text-gray-800">
-              {currentPlayer === 'X' ? 'Your Turn (X)' : 'Computer Thinking...'}
+              {currentPlayer === 'X' ? `${t('yourTurn')} (X)` : `${t('computerThinking')}...`}
             </div>
           </div>
         )}
@@ -205,7 +310,7 @@ export function TicTacToe({ onBack, onScoreUpdate, highScore }: TicTacToeProps) 
 
       {/* Instructions */}
       <div className="mt-6 text-center text-gray-600">
-        <p>Get 3 in a row to win! You play as X, computer plays as O.</p>
+        <p>{t('tictactoe_instruction')}</p>
       </div>
     </div>
   )

@@ -144,10 +144,10 @@ View historical trends and milestones in your net worth over time.
 
 Fun financial education games to improve your financial literacy.
 
-- [x] Tic-Tac-Toe
-- [x] Finance Quiz
-- [x] Breakout
-- [ ] Memory Match
+- [x] Tic-Tac-Toe (with 3 difficulty levels: Easy/Medium/Hard)
+- [x] Finance Quiz (25+ questions with streak bonuses)
+- [x] Breakout (5 levels with brick patterns)
+- [x] Memory Match (3 difficulty levels with timer)
 
 ### Settings
 
@@ -160,10 +160,44 @@ Configure app preferences including currency, language, and theme.
 
 ## General
 
-TODO - general ideas, brainstorming, and future considerations not yet categorized.
+General ideas, brainstorming and future considerations not yet categorized.
+
+### Game Concepts
+
+Here are some fun, implementable game concepts that would fit well with FinTrack:
+
+1. "Stock Picker" Prediction Game
+    - Predict whether a stock will go up or down by market close
+    - Compete on leaderboards or with friends
+    - Uses real market data via your existing Yahoo Finance integration
+
+2. "Budget Tetris" Challenge
+    - Given a monthly income, fit various expense categories into it
+    - See how much "overflow" or "waste" you create
+    - Educational and quick to play
+
+3. Investment Trivia Quiz
+    - Multiple choice questions about finance/investing
+    - Levels: Beginner → Expert
+    - Score tracking and streaks
+
+4. "What If" Simulator
+    - "What if I invested $500/month for 30 years?"
+    - Visualize compound growth with different scenarios
+    - Compare choices (stocks vs bonds vs crypto)
+
+5. Portfolio Challenge
+    - Start with fake $100,000
+    - Build a portfolio from historical data
+    - See how it would have performed over 1/5/10 years
+
+6. Savings Streak
+    - Gamify savings goals
+    - Daily check-ins, streaks, badges
+    - Encourages consistent saving habits
 
 ---
 
 **Legend:** [x] = Implemented | [~] = Partially Implemented | [ ] = Planned
 
-**Last updated:** February 2025
+**Last updated:** February 2026

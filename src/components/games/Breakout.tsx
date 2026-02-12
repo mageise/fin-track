@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ArrowLeft, RotateCcw } from 'lucide-react'
+import { useTranslation } from '../../hooks/useTranslation'
 
 interface BreakoutProps {
   onBack: () => void
-  onScoreUpdate: (score: number) => void
+  onScoreUpdate: (score: number, level: number) => void
   highScore: number
 }
 
@@ -48,6 +49,7 @@ const BRICK_OFFSET_TOP = 60
 const BRICK_OFFSET_LEFT = 35
 
 export function Breakout({ onBack, onScoreUpdate, highScore }: BreakoutProps) {
+  const { t } = useTranslation()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [score, setScore] = useState(0)
   const [lives, setLives] = useState(3)
@@ -202,23 +204,23 @@ export function Breakout({ onBack, onScoreUpdate, highScore }: BreakoutProps) {
         ctx.fillStyle = '#ffffff'
         ctx.font = 'bold 30px Arial'
         ctx.textAlign = 'center'
-        ctx.fillText('CLICK TO START', GAME_WIDTH / 2, GAME_HEIGHT / 2)
+        ctx.fillText(t('breakout_clickToStart'), GAME_WIDTH / 2, GAME_HEIGHT / 2)
       } else if (gameStateRef.current === 'gameOver') {
         ctx.fillStyle = '#ef4444'
         ctx.font = 'bold 40px Arial'
         ctx.textAlign = 'center'
-        ctx.fillText('GAME OVER', GAME_WIDTH / 2, GAME_HEIGHT / 2)
+        ctx.fillText(t('gameOver'), GAME_WIDTH / 2, GAME_HEIGHT / 2)
         ctx.fillStyle = '#ffffff'
         ctx.font = '20px Arial'
-        ctx.fillText('Click to try again', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40)
+        ctx.fillText(t('playAgain'), GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40)
       } else if (gameStateRef.current === 'won') {
         ctx.fillStyle = '#22c55e'
         ctx.font = 'bold 40px Arial'
         ctx.textAlign = 'center'
-        ctx.fillText('YOU WON!', GAME_WIDTH / 2, GAME_HEIGHT / 2)
+        ctx.fillText(t('breakout_youWon'), GAME_WIDTH / 2, GAME_HEIGHT / 2)
         ctx.fillStyle = '#ffffff'
         ctx.font = '20px Arial'
-        ctx.fillText('Click to play next level', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40)
+        ctx.fillText(t('breakout_level') + ' ' + (level + 1), GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40)
       }
     }
 
@@ -266,11 +268,7 @@ export function Breakout({ onBack, onScoreUpdate, highScore }: BreakoutProps) {
         ) {
           brick.visible = false
           ball.dy = -ball.dy
-          setScore((prev) => {
-            const newScore = prev + brick.points
-            onScoreUpdate(newScore)
-            return newScore
-          })
+          setScore((prev) => prev + brick.points)
         }
       })
 
@@ -309,6 +307,13 @@ export function Breakout({ onBack, onScoreUpdate, highScore }: BreakoutProps) {
     }
   }, [onScoreUpdate, resetBall])
 
+  // Call onScoreUpdate when game ends
+  useEffect(() => {
+    if (gameState === 'gameOver') {
+      onScoreUpdate(score, level)
+    }
+  }, [gameState, score, level, onScoreUpdate])
+
   // Initialize on mount
   useEffect(() => {
     initializeBricks()
@@ -331,19 +336,19 @@ export function Breakout({ onBack, onScoreUpdate, highScore }: BreakoutProps) {
           className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
         >
           <ArrowLeft className="w-5 h-5" />
-          Back to Games
+          {t('backToGames')}
         </button>
         <div className="flex items-center gap-6">
           <div className="text-right">
-            <div className="text-sm text-gray-600">Score</div>
+            <div className="text-sm text-gray-600">{t('score')}</div>
             <div className="text-2xl font-bold text-orange-600">{score}</div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-600">Level</div>
+            <div className="text-sm text-gray-600">{t('breakout_level')}</div>
             <div className="text-2xl font-bold text-blue-600">{level}</div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-600">Lives</div>
+            <div className="text-sm text-gray-600">{t('breakout_lives')}</div>
             <div className="flex gap-1">
               {Array.from({ length: lives }).map((_, i) => (
                 <div key={i} className="w-3 h-3 rounded-full bg-red-500" />
@@ -351,7 +356,7 @@ export function Breakout({ onBack, onScoreUpdate, highScore }: BreakoutProps) {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-600">Best</div>
+            <div className="text-sm text-gray-600">{t('best')}</div>
             <div className="text-2xl font-bold text-purple-600">{highScore}</div>
           </div>
         </div>
@@ -377,12 +382,12 @@ export function Breakout({ onBack, onScoreUpdate, highScore }: BreakoutProps) {
 
       {/* Instructions */}
       <div className="mt-4 text-center text-gray-600">
-        <p>Move your mouse or touch and drag to control the paddle. Break all bricks to win!</p>
+        <p>{t('breakout_instruction')}</p>
         <div className="flex justify-center gap-4 mt-2">
           {BRICK_COLORS.map((color, i) => (
             <div key={i} className="flex items-center gap-1">
               <div className="w-4 h-4 rounded" style={{ backgroundColor: color }} />
-              <span className="text-sm">{BRICK_POINTS[i]} pts</span>
+              <span className="text-sm">{BRICK_POINTS[i]} {t('pts')}</span>
             </div>
           ))}
         </div>
@@ -396,7 +401,7 @@ export function Breakout({ onBack, onScoreUpdate, highScore }: BreakoutProps) {
             className="flex items-center gap-2 mx-auto px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
           >
             <RotateCcw className="w-4 h-4" />
-            Reset Game
+            {t('playAgain')}
           </button>
         </div>
       )}

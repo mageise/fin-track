@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ArrowLeft, RotateCcw, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { useTranslation } from '../../hooks/useTranslation'
 
 interface FinanceQuizProps {
   onBack: () => void
-  onScoreUpdate: (score: number) => void
+  onScoreUpdate: (score: number, accuracy: number, maxStreak: number) => void
   highScore: number
 }
 
@@ -194,6 +195,7 @@ const QUESTIONS: Question[] = [
 ]
 
 export function FinanceQuiz({ onBack, onScoreUpdate, highScore }: FinanceQuizProps) {
+  const { t } = useTranslation()
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [score, setScore] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
@@ -219,7 +221,6 @@ export function FinanceQuiz({ onBack, onScoreUpdate, highScore }: FinanceQuizPro
       const points = 100 + (newStreak - 1) * 10
       const newScore = score + points
       setScore(newScore)
-      onScoreUpdate(newScore)
     } else {
       setStreak(0)
     }
@@ -247,6 +248,13 @@ export function FinanceQuiz({ onBack, onScoreUpdate, highScore }: FinanceQuizPro
     setMaxStreak(0)
   }
 
+  useEffect(() => {
+    if (isComplete) {
+      const percentage = Math.round((score / (QUESTIONS.length * 100)) * 100)
+      onScoreUpdate(score, percentage, maxStreak)
+    }
+  }, [isComplete, score, maxStreak, onScoreUpdate])
+
   if (isComplete) {
     const percentage = Math.round((score / (QUESTIONS.length * 100)) * 100)
     return (
@@ -257,28 +265,28 @@ export function FinanceQuiz({ onBack, onScoreUpdate, highScore }: FinanceQuizPro
             className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
           >
             <ArrowLeft className="w-5 h-5" />
-            Back to Games
+            {t('backToGames')}
           </button>
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-8 text-center">
           <div className="text-5xl mb-4">🎉</div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Quiz Complete!</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">{t('quiz_complete')}</h2>
           <div className="text-6xl font-bold text-emerald-600 mb-2">{score}</div>
-          <div className="text-gray-600 mb-6">Total Points</div>
+          <div className="text-gray-600 mb-6">{t('quiz_totalPoints')}</div>
           
           <div className="grid grid-cols-3 gap-4 mb-8">
             <div className="bg-emerald-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-emerald-600">{percentage}%</div>
-              <div className="text-sm text-gray-600">Accuracy</div>
+              <div className="text-sm text-gray-600">{t('quiz_accuracy')}</div>
             </div>
             <div className="bg-blue-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-blue-600">{maxStreak}</div>
-              <div className="text-sm text-gray-600">Best Streak</div>
+              <div className="text-sm text-gray-600">{t('quiz_bestStreak')}</div>
             </div>
             <div className="bg-purple-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-purple-600">{highScore}</div>
-              <div className="text-sm text-gray-600">All-Time Best</div>
+              <div className="text-sm text-gray-600">{t('best')}</div>
             </div>
           </div>
 
@@ -287,7 +295,7 @@ export function FinanceQuiz({ onBack, onScoreUpdate, highScore }: FinanceQuizPro
             className="flex items-center gap-2 mx-auto px-6 py-3 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 text-lg"
           >
             <RotateCcw className="w-5 h-5" />
-            Play Again
+            {t('playAgain')}
           </button>
         </div>
       </div>
@@ -306,19 +314,19 @@ export function FinanceQuiz({ onBack, onScoreUpdate, highScore }: FinanceQuizPro
           className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
         >
           <ArrowLeft className="w-5 h-5" />
-          Back to Games
+          {t('backToGames')}
         </button>
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <div className="text-sm text-gray-600">Question</div>
-            <div className="text-xl font-bold text-gray-800">{currentQuestion + 1} / {QUESTIONS.length}</div>
+            <div className="text-sm text-gray-600">{t('quiz_question')}</div>
+            <div className="text-xl font-bold text-gray-800">{currentQuestion + 1} {t('quiz_of')} {QUESTIONS.length}</div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-600">Score</div>
+            <div className="text-sm text-gray-600">{t('score')}</div>
             <div className="text-2xl font-bold text-emerald-600">{score}</div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-600">Best</div>
+            <div className="text-sm text-gray-600">{t('best')}</div>
             <div className="text-2xl font-bold text-purple-600">{highScore}</div>
           </div>
         </div>
@@ -335,7 +343,7 @@ export function FinanceQuiz({ onBack, onScoreUpdate, highScore }: FinanceQuizPro
         {streak > 0 && (
           <div className="flex items-center gap-1 mt-2 text-orange-600">
             <Clock className="w-4 h-4" />
-            <span className="font-semibold">{streak} streak! (+{streak * 10} bonus)</span>
+            <span className="font-semibold">{streak} {t('quiz_streakBonus')} (+{streak * 10})</span>
           </div>
         )}
       </div>
@@ -377,14 +385,14 @@ export function FinanceQuiz({ onBack, onScoreUpdate, highScore }: FinanceQuizPro
         {showExplanation && (
           <div className={`mt-6 p-4 rounded-lg ${isCorrect ? 'bg-green-50' : 'bg-red-50'}`}>
             <div className={`font-semibold mb-2 ${isCorrect ? 'text-green-800' : 'text-red-800'}`}>
-              {isCorrect ? '✓ Correct!' : '✗ Wrong!'}
+              {isCorrect ? `✓ ${t('quiz_correct')}` : `✗ ${t('quiz_wrong')}`}
             </div>
             <p className="text-gray-700">{question.explanation}</p>
             <button
               onClick={nextQuestion}
               className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
             >
-              {currentQuestion < QUESTIONS.length - 1 ? 'Next Question →' : 'See Results'}
+              {currentQuestion < QUESTIONS.length - 1 ? `${t('quiz_nextQuestion')} →` : t('quiz_seeResults')}
             </button>
           </div>
         )}
