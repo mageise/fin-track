@@ -66,18 +66,21 @@ Analyze your investment returns and portfolio performance metrics.
 - [ ] Historical performance trends
 - [ ] Benchmark comparisons
 
-### Reports
+### Reports [MVP Complete ✓]
 
 Generate comprehensive financial reports and export data for external use.
 
+**Implemented (MVP):**
 - [x] Report generation with multiple types (Comprehensive, Net Worth, Investments, Budget, Savings)
 - [x] Date range selection (presets and custom)
 - [x] Section selection for customized reports
 - [x] Report data aggregation (net worth, investments, budget, savings)
 - [x] Report viewer modal with detailed data display
 - [x] CSV export functionality
+
+**Deferred to v2:**
 - [ ] PDF export with charts
-- [ ] Report templates
+- [ ] Report templates (UI done, functionality pending)
 - [ ] Email reports
 
 ## Planning Tools
