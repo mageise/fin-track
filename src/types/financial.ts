@@ -182,3 +182,94 @@ export interface CashAccount {
   dateAdded: string
   notes?: string
 }
+
+// Reports Types
+export type ReportType =
+  | 'net-worth-summary'
+  | 'investment-performance'
+  | 'budget-analysis'
+  | 'savings-progress'
+  | 'comprehensive'
+
+export type ReportSection = 'net-worth' | 'investments' | 'budget' | 'savings' | 'summary'
+
+export interface InvestmentPerformance {
+  symbol: string
+  name: string
+  gain: number
+  gainPercent: number
+}
+
+export interface AllocationItem {
+  name: string
+  value: number
+}
+
+export interface BudgetCategorySummary {
+  category: string
+  budget: number
+  spent: number
+  remaining: number
+}
+
+export interface SavingsGoalProgress {
+  name: string
+  currentAmount: number
+  targetAmount: number
+  progressPercent: number
+}
+
+export interface ReportData {
+  netWorth?: {
+    startAmount: number
+    endAmount: number
+    change: number
+    changePercent: number
+  }
+  investments?: {
+    totalValue: number
+    totalGain: number
+    totalReturn: number
+    topPerformers: InvestmentPerformance[]
+    worstPerformers: InvestmentPerformance[]
+    allocationByType: AllocationItem[]
+    allocationByAccount: AllocationItem[]
+  }
+  budget?: {
+    totalBudget: number
+    totalSpent: number
+    totalRemaining: number
+    adherencePercent: number
+    categoryBreakdown: BudgetCategorySummary[]
+    overspentCategories: string[]
+  }
+  savings?: {
+    totalSaved: number
+    totalTarget: number
+    progressPercent: number
+    completedGoals: number
+    activeGoals: number
+    goalsProgress: SavingsGoalProgress[]
+  }
+}
+
+export interface Report {
+  id: string
+  type: ReportType
+  title: string
+  dateRange: {
+    start: string
+    end: string
+  }
+  generatedAt: string
+  sections: ReportSection[]
+  data: ReportData
+}
+
+export interface ReportTemplate {
+  id: string
+  name: string
+  type: ReportType
+  defaultDateRange: 'current-month' | 'current-year' | 'last-30-days' | 'last-90-days' | 'ytd' | 'custom'
+  includedSections: ReportSection[]
+}

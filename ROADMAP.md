@@ -70,8 +70,14 @@ Analyze your investment returns and portfolio performance metrics.
 
 Generate comprehensive financial reports and export data for external use.
 
-- [ ] Monthly/yearly summaries
-- [ ] PDF/CSV export
+- [x] Report generation with multiple types (Comprehensive, Net Worth, Investments, Budget, Savings)
+- [x] Date range selection (presets and custom)
+- [x] Section selection for customized reports
+- [x] Report data aggregation (net worth, investments, budget, savings)
+- [x] Report viewer modal with detailed data display
+- [x] CSV export functionality
+- [ ] PDF export with charts
+- [ ] Report templates
 - [ ] Email reports
 
 ## Planning Tools

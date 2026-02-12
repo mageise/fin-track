@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, useEffect, useRef, type ReactNode } from 'react'
-import type { Asset, Liability, NetWorthHistory, Investment, SavingsGoal, BudgetScenario, CashAccount, WatchlistItem } from '../types/financial'
+import type { Asset, Liability, NetWorthHistory, Investment, SavingsGoal, BudgetScenario, CashAccount, WatchlistItem, Report, ReportTemplate } from '../types/financial'
 
 export type Locale = 'de' | 'en'
 export type Currency = 'EUR' | 'USD'
@@ -19,6 +19,8 @@ interface FinancialState {
   currency: Currency
   firstName: string
   cashBalance: number
+  reports: Report[]
+  reportTemplates: ReportTemplate[]
 }
 
 type Action =
@@ -55,6 +57,10 @@ type Action =
   | { type: 'SET_CURRENCY'; payload: Currency }
   | { type: 'SET_FIRST_NAME'; payload: string }
   | { type: 'SET_CASH_BALANCE'; payload: number }
+  | { type: 'ADD_REPORT'; payload: Report }
+  | { type: 'DELETE_REPORT'; payload: string }
+  | { type: 'ADD_REPORT_TEMPLATE'; payload: ReportTemplate }
+  | { type: 'DELETE_REPORT_TEMPLATE'; payload: string }
   | { type: 'LOAD_STATE'; payload: FinancialState }
 
 const STORAGE_KEY = 'fintrack-data-v2'
@@ -74,6 +80,8 @@ const defaultState: FinancialState = {
   currency: 'EUR',
   firstName: '',
   cashBalance: 0,
+  reports: [],
+  reportTemplates: [],
 }
 
 // Load initial state from localStorage
@@ -98,6 +106,8 @@ function loadInitialState(): FinancialState {
         currency: parsed.currency || 'EUR',
         firstName: parsed.firstName || '',
         cashBalance: parsed.cashBalance ?? 0,
+        reports: parsed.reports || [],
+        reportTemplates: parsed.reportTemplates || [],
       }
     }
   } catch (e) {
@@ -347,6 +357,14 @@ function financialReducer(state: FinancialState, action: Action): FinancialState
       return { ...state, firstName: action.payload }
     case 'SET_CASH_BALANCE':
       return { ...state, cashBalance: action.payload }
+    case 'ADD_REPORT':
+      return { ...state, reports: [...state.reports, action.payload] }
+    case 'DELETE_REPORT':
+      return { ...state, reports: state.reports.filter((r) => r.id !== action.payload) }
+    case 'ADD_REPORT_TEMPLATE':
+      return { ...state, reportTemplates: [...state.reportTemplates, action.payload] }
+    case 'DELETE_REPORT_TEMPLATE':
+      return { ...state, reportTemplates: state.reportTemplates.filter((t) => t.id !== action.payload) }
     case 'LOAD_STATE':
       return { 
         ...action.payload, 
@@ -359,6 +377,8 @@ function financialReducer(state: FinancialState, action: Action): FinancialState
         locale: action.payload.locale || 'de',
         currency: action.payload.currency || 'EUR',
         firstName: action.payload.firstName || '',
+        reports: action.payload.reports || [],
+        reportTemplates: action.payload.reportTemplates || [],
       }
     default:
       return state
@@ -400,6 +420,10 @@ interface FinancialContextType {
   setCurrency: (currency: Currency) => void
   setFirstName: (firstName: string) => void
   updateCashBalance: (amount: number) => void
+  generateReport: (report: Omit<Report, 'id' | 'generatedAt'>) => void
+  deleteReport: (id: string) => void
+  createReportTemplate: (template: Omit<ReportTemplate, 'id'>) => void
+  deleteReportTemplate: (id: string) => void
   totalAssets: number
   totalLiabilities: number
   netWorth: number
@@ -535,6 +559,31 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
 
   const updateCashBalance = (amount: number) => {
     dispatch({ type: 'SET_CASH_BALANCE', payload: amount })
+  }
+
+  const generateReport = (report: Omit<Report, 'id' | 'generatedAt'>) => {
+    const newReport: Report = {
+      ...report,
+      id: generateId(),
+      generatedAt: new Date().toISOString(),
+    }
+    dispatch({ type: 'ADD_REPORT', payload: newReport })
+  }
+
+  const deleteReport = (id: string) => {
+    dispatch({ type: 'DELETE_REPORT', payload: id })
+  }
+
+  const createReportTemplate = (template: Omit<ReportTemplate, 'id'>) => {
+    const newTemplate: ReportTemplate = {
+      ...template,
+      id: generateId(),
+    }
+    dispatch({ type: 'ADD_REPORT_TEMPLATE', payload: newTemplate })
+  }
+
+  const deleteReportTemplate = (id: string) => {
+    dispatch({ type: 'DELETE_REPORT_TEMPLATE', payload: id })
   }
 
   const addSavingsGoal = (goal: Omit<SavingsGoal, 'id' | 'dateCreated'>) => {
@@ -692,6 +741,10 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         setCurrency,
         setFirstName,
         updateCashBalance,
+        generateReport,
+        deleteReport,
+        createReportTemplate,
+        deleteReportTemplate,
         totalAssets,
         totalLiabilities,
         netWorth,

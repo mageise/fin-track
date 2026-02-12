@@ -14,6 +14,7 @@ import {
   Wallet,
   Gamepad2,
   Activity,
+  FileText,
 } from 'lucide-react'
 import { ToolTile } from '../components/ToolTile'
 import { useTranslation } from '../hooks/useTranslation'
@@ -84,10 +85,10 @@ export function Toolbox() {
     {
       id: 'reports',
       name: t('tool_reports'),
-      icon: <TrendingUp className="w-16 h-16 text-white" />,
+      icon: <FileText className="w-16 h-16 text-white" />,
       path: '/reports',
       color: 'indigo',
-      isPlaceholder: true,
+      isPlaceholder: false,
     },
 
     // Row 3 - Planning
