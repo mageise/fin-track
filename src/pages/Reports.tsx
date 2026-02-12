@@ -6,6 +6,7 @@ import { Card } from '../components/Card'
 import { useTranslation } from '../hooks/useTranslation'
 import { useFormatters } from '../hooks/useFormatters'
 import type { ReportType, ReportSection, ReportData } from '../types/financial'
+import jsPDF from 'jspdf'
 
 const REPORT_TYPES: { value: ReportType; label: string }[] = [
   { value: 'comprehensive', label: 'Comprehensive Report' },
@@ -35,13 +36,15 @@ const SECTIONS: { value: ReportSection; label: string }[] = [
 export function Reports() {
   const { t } = useTranslation()
   const { formatDate } = useFormatters()
-  const { state, generateReport, deleteReport } = useFinancial()
+  const { state, generateReport, deleteReport, createReportTemplate, deleteReportTemplate } = useFinancial()
 
   const [isGenerating, setIsGenerating] = useState(false)
   const [selectedType, setSelectedType] = useState<ReportType>('comprehensive')
   const [selectedDateRange, setSelectedDateRange] = useState('last-30-days')
   const [selectedSections, setSelectedSections] = useState<ReportSection[]>(['summary', 'net-worth', 'investments'])
   const [viewingReport, setViewingReport] = useState<string | null>(null)
+  const [showTemplateForm, setShowTemplateForm] = useState(false)
+  const [templateName, setTemplateName] = useState('')
 
   const handleGenerateReport = async () => {
     setIsGenerating(true)
@@ -291,9 +294,121 @@ export function Reports() {
     document.body.removeChild(link)
   }
 
-  const handleExportPDF = (reportId: string) => {
-    // TODO: Implement PDF export
-    console.log('Exporting PDF for report:', reportId)
+  const handleExportPDF = async (reportId: string) => {
+    const report = state.reports.find(r => r.id === reportId)
+    if (!report) return
+
+    const pdf = new jsPDF('p', 'mm', 'a4')
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    const margin = 20
+    let yPos = margin
+
+    // Header
+    pdf.setFontSize(20)
+    pdf.setTextColor(44, 62, 80)
+    pdf.text('FinTrack Report', pageWidth / 2, yPos, { align: 'center' })
+    yPos += 10
+
+    pdf.setFontSize(12)
+    pdf.setTextColor(100, 100, 100)
+    pdf.text(report.title, pageWidth / 2, yPos, { align: 'center' })
+    yPos += 15
+
+    // Date info
+    pdf.setFontSize(10)
+    pdf.text(`Generated: ${formatDate(report.generatedAt)}`, margin, yPos)
+    yPos += 20
+
+    // Helper function for sections
+    const addSection = (title: string, content: string[]) => {
+      if (yPos > 250) {
+        pdf.addPage()
+        yPos = margin
+      }
+      
+      pdf.setFontSize(14)
+      pdf.setTextColor(44, 62, 80)
+      pdf.text(title, margin, yPos)
+      yPos += 8
+
+      pdf.setFontSize(10)
+      pdf.setTextColor(80, 80, 80)
+      content.forEach(line => {
+        pdf.text(line, margin + 5, yPos)
+        yPos += 5
+      })
+      yPos += 10
+    }
+
+    // Net Worth Section
+    if (report.data.netWorth) {
+      addSection('Net Worth Summary', [
+        `Start Amount: €${report.data.netWorth.startAmount.toLocaleString()}`,
+        `End Amount: €${report.data.netWorth.endAmount.toLocaleString()}`,
+        `Change: ${report.data.netWorth.change >= 0 ? '+' : ''}€${report.data.netWorth.change.toLocaleString()}`,
+        `Change %: ${report.data.netWorth.changePercent >= 0 ? '+' : ''}${report.data.netWorth.changePercent.toFixed(2)}%`
+      ])
+    }
+
+    // Investments Section
+    if (report.data.investments) {
+      addSection('Investment Performance', [
+        `Total Value: €${report.data.investments.totalValue.toLocaleString()}`,
+        `Total Gain/Loss: ${report.data.investments.totalGain >= 0 ? '+' : ''}€${report.data.investments.totalGain.toLocaleString()}`,
+        `Total Return: ${report.data.investments.totalReturn >= 0 ? '+' : ''}${report.data.investments.totalReturn.toFixed(2)}%`
+      ])
+
+      if (report.data.investments.topPerformers.length > 0) {
+        if (yPos > 220) {
+          pdf.addPage()
+          yPos = margin
+        }
+        pdf.setFontSize(12)
+        pdf.setTextColor(44, 62, 80)
+        pdf.text('Top Performers', margin, yPos)
+        yPos += 6
+
+        report.data.investments.topPerformers.slice(0, 3).forEach((perf, idx) => {
+          pdf.setFontSize(9)
+          pdf.setTextColor(80, 80, 80)
+          pdf.text(`${idx + 1}. ${perf.name} (${perf.symbol}): +${perf.gainPercent.toFixed(2)}%`, margin + 5, yPos)
+          yPos += 4
+        })
+        yPos += 10
+      }
+    }
+
+    // Budget Section
+    if (report.data.budget) {
+      addSection('Budget Analysis', [
+        `Total Budget: €${report.data.budget.totalBudget.toLocaleString()}`,
+        `Total Spent: €${report.data.budget.totalSpent.toLocaleString()}`,
+        `Remaining: €${report.data.budget.totalRemaining.toLocaleString()}`,
+        `Adherence: ${report.data.budget.adherencePercent.toFixed(1)}%`
+      ])
+    }
+
+    // Savings Section
+    if (report.data.savings) {
+      addSection('Savings Progress', [
+        `Total Saved: €${report.data.savings.totalSaved.toLocaleString()}`,
+        `Total Target: €${report.data.savings.totalTarget.toLocaleString()}`,
+        `Progress: ${report.data.savings.progressPercent.toFixed(1)}%`,
+        `Completed Goals: ${report.data.savings.completedGoals} of ${report.data.savings.completedGoals + report.data.savings.activeGoals}`
+      ])
+    }
+
+    // Footer
+    const pageCount = pdf.getNumberOfPages()
+    for (let i = 1; i <= pageCount; i++) {
+      pdf.setPage(i)
+      pdf.setFontSize(8)
+      pdf.setTextColor(150, 150, 150)
+      pdf.text(`FinTrack Report - Page ${i} of ${pageCount}`, pageWidth / 2, 285, { align: 'center' })
+    }
+
+    // Download
+    pdf.save(`fintrack-report-${report.type}-${new Date().toISOString().split('T')[0]}.pdf`)
   }
 
   const handleViewReport = (reportId: string) => {
@@ -305,6 +420,29 @@ export function Reports() {
   }
 
   const selectedReportData = viewingReport ? state.reports.find(r => r.id === viewingReport) : null
+
+  const handleCreateTemplate = () => {
+    if (!templateName.trim()) return
+    
+    createReportTemplate({
+      name: templateName,
+      type: selectedType,
+      defaultDateRange: selectedDateRange as 'current-month' | 'current-year' | 'last-30-days' | 'last-90-days' | 'ytd' | 'custom',
+      includedSections: selectedSections
+    })
+    
+    setTemplateName('')
+    setShowTemplateForm(false)
+  }
+
+  const handleLoadTemplate = (templateId: string) => {
+    const template = state.reportTemplates.find(t => t.id === templateId)
+    if (template) {
+      setSelectedType(template.type)
+      setSelectedDateRange(template.defaultDateRange)
+      setSelectedSections(template.includedSections)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -463,6 +601,87 @@ export function Reports() {
                 </>
               )}
             </button>
+          </div>
+        </Card>
+
+        {/* Report Templates */}
+        <Card className="mb-8" title="Report Templates">
+          <div className="space-y-4">
+            {/* Create Template Button */}
+            {!showTemplateForm ? (
+              <button
+                onClick={() => setShowTemplateForm(true)}
+                className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                Save Current Settings as Template
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  placeholder="Template name..."
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+                <button
+                  onClick={handleCreateTemplate}
+                  disabled={!templateName.trim()}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setShowTemplateForm(false)
+                    setTemplateName('')
+                  }}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {/* Template List */}
+            {state.reportTemplates.length === 0 ? (
+              <p className="text-gray-500 text-sm">No templates saved yet. Configure report settings above and save as a template.</p>
+            ) : (
+              <div className="space-y-2">
+                {state.reportTemplates.map((template) => (
+                  <div
+                    key={template.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-indigo-600" />
+                      <div>
+                        <p className="font-medium text-gray-800">{template.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {REPORT_TYPES.find(t => t.value === template.type)?.label} • {template.includedSections.length} sections
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleLoadTemplate(template.id)}
+                        className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition-colors"
+                      >
+                        Load
+                      </button>
+                      <button
+                        onClick={() => deleteReportTemplate(template.id)}
+                        className="p-1 text-gray-600 hover:text-red-600 transition-colors"
+                        title="Delete Template"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </Card>
 
