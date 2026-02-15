@@ -3,8 +3,8 @@
  * Unofficial API for fetching stock and crypto prices
  * Endpoint: https://query1.finance.yahoo.com/v8/finance/chart/{SYMBOL}
  * 
- * NOTE: Yahoo Finance API has CORS restrictions. This service uses a CORS proxy
- * in development mode to bypass restrictions.
+ * NOTE: Yahoo Finance API has CORS restrictions. This service always uses a CORS proxy
+ * to bypass restrictions in both development and production.
  */
 
 export interface PriceUpdateResult {
@@ -18,9 +18,6 @@ export interface BatchUpdateResult {
   failed: PriceUpdateResult[]
   timestamp: Date
 }
-
-// Check if we're in development mode
-const isDevelopment = typeof window !== 'undefined' && window.location.hostname === 'localhost'
 
 // CORS proxy URL (free public proxy)
 const CORS_PROXY = 'https://corsproxy.io/?'
@@ -62,9 +59,9 @@ export async function fetchStockPrice(symbol: string): Promise<PriceUpdateResult
   
   try {
     const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${trimmedSymbol}?interval=1d&range=1d`
-    // Use CORS proxy in development
-    const url = isDevelopment ? `${CORS_PROXY}${encodeURIComponent(baseUrl)}` : baseUrl
-    
+    // Always use CORS proxy to bypass restrictions
+    const url = `${CORS_PROXY}${encodeURIComponent(baseUrl)}`
+
     console.log(`Fetching price for ${trimmedSymbol}...`)
     console.log(`URL: ${url}`)
     
@@ -138,24 +135,16 @@ export async function fetchStockPrice(symbol: string): Promise<PriceUpdateResult
     
   } catch (error) {
     console.error(`Error fetching price for ${trimmedSymbol}:`, error)
-    
+
     // Provide more specific error messages
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      if (isDevelopment) {
-        return {
-          symbol: trimmedSymbol,
-          price: null,
-          error: `Network error: Cannot connect to CORS proxy. The proxy service may be temporarily unavailable.`,
-        }
-      } else {
-        return {
-          symbol: trimmedSymbol,
-          price: null,
-          error: `Network error: Cannot fetch data. Please check your internet connection.`,
-        }
+      return {
+        symbol: trimmedSymbol,
+        price: null,
+        error: `Network error: Cannot connect to CORS proxy. The proxy service may be temporarily unavailable.`,
       }
     }
-    
+
     return {
       symbol: trimmedSymbol,
       price: null,
