@@ -21,6 +21,7 @@ Create a plan file when:
 Each plan file should follow this template:
 
 ```markdown
+
 # Feature Name
 
 ## Overview
@@ -142,7 +143,7 @@ Before implementation, review UI_GUIDELINES.md. All features must follow these s
 
 ## Testing Requirements
 
-### Minimum Test Coverage (Option B)
+### Minimum Test Coverage
 
 **REQUIRED for complex logic:**
 - Data transformation functions
@@ -157,14 +158,8 @@ Before implementation, review UI_GUIDELINES.md. All features must follow these s
 ### Test Types
 
 1. **Unit Tests** (when logic is complex)
-   ```typescript
-   // Example: Test report data aggregation
-   describe('calculateNetWorthChange', () => {
-     it('should calculate percentage change correctly', () => {
-       // test code
-     })
-   })
-   ```
+   - XYZ calculation logic
+   - ...
 
 2. **Integration Tests** (at least one per feature)
    - Test complete user flow end-to-end
@@ -176,12 +171,29 @@ Before implementation, review UI_GUIDELINES.md. All features must follow these s
    - [ ] Empty states display correctly
    - [ ] Error states handled gracefully
    - [ ] Build passes successfully (`npm run build`)
+   
+### Edge Cases
+- [ ] No ... added yet (empty state)
+- [ ] ... not set for category
+- [ ] ... with negative number
+- [ ] Very large ... amounts
+- [ ] Date in future
+- [ ] ...
 
-### Document in Notes
-If tests are skipped, document in "Notes" section with reason:
-```markdown
+**Rule:** If tests are skipped, document in "Notes" section with reason.
+
 ## Notes
+- Consider integration with XYZ feature
+- May need to update translations (DE/EN) for new UI text
+- Icon suggestions: Wallet, Receipt, TrendingUp, PieChart
+- Color scheme: Use existing app colors, amber for XYZ warnings
 - Tests skipped: Simple CRUD operations, no complex logic to test
+
+## References
+- Similar implementation: `src/pages/...`
+- Recharts examples: `src/pages/...`
+- Form patterns: `src/components/...`
+
 ```
 
 ## Implementation Completion Verification
@@ -247,6 +259,7 @@ Before declaring a feature "complete", verify ALL items below:
 When presenting finished work to user, use this format:
 
 ```markdown
+
 ## Feature Complete: [Feature Name]
 
 ### What Was Implemented
@@ -275,6 +288,7 @@ When presenting finished work to user, use this format:
 [ ] No - Still working on [X]
 
 **Next step:** Your review → My fixes (if needed) → Commit on your approval
+
 ```
 
 ### User Review Checklist
@@ -304,6 +318,7 @@ User should verify before giving commit approval:
 Use this template:
 
 ```
+
 I'm at [checkpoint]. I've completed:
 ✅ [Feature X]
 ✅ [Feature Y]
@@ -322,6 +337,7 @@ I have a decision to make:
 **Option C:** [Alternative approach]
 
 What would you prefer? I'm happy to go with any option.
+
 ```
 
 ### Making the Decision

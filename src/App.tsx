@@ -10,6 +10,8 @@ import { Settings } from './pages/Settings'
 import { Games } from './pages/Games'
 import { Performance } from './pages/Performance'
 import { Reports } from './pages/Reports'
+import { IncomeExpenditurePage } from './pages/IncomeExpenditure'
+import { TaxCalculator } from './pages/TaxCalculator'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 export function AppContent() {
@@ -27,6 +29,8 @@ export function AppContent() {
           <Route path="/games" element={<Games />} />
           <Route path="/performance" element={<Performance />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/income-expenditure" element={<IncomeExpenditurePage />} />
+          <Route path="/tax" element={<TaxCalculator />} />
         </Routes>
       </FinancialProvider>
     </ErrorBoundary>

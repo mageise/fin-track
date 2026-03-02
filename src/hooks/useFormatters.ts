@@ -6,12 +6,12 @@ export function useFormatters() {
   // Map locale to Intl format
   const intlLocale = locale === 'en' ? 'en-US' : 'de-DE'
   
-  const formatCurrency = (value: number): string => {
+  const formatCurrency = (value: number, decimals = 0): string => {
     return new Intl.NumberFormat(intlLocale, {
       style: 'currency',
       currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
     }).format(value)
   }
   

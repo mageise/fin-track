@@ -1,5 +1,7 @@
 import { createContext, useContext, useReducer, useEffect, useRef, type ReactNode } from 'react'
 import type { Asset, Liability, NetWorthHistory, Investment, SavingsGoal, BudgetScenario, CashAccount, WatchlistItem, Report, ReportTemplate } from '../types/financial'
+import type { WorkConfig, TaxConfig, Expenditure } from '../types/incomeExpenditure'
+import { DEFAULT_TAX_CONFIG } from '../types/incomeExpenditure'
 
 export type Locale = 'de' | 'en'
 export type Currency = 'EUR' | 'USD'
@@ -21,6 +23,10 @@ interface FinancialState {
   cashBalance: number
   reports: Report[]
   reportTemplates: ReportTemplate[]
+  workConfig: WorkConfig | null
+  taxConfig: TaxConfig | null
+  expenditures: Expenditure[]
+  annualNetIncome: number
 }
 
 type Action =
@@ -61,6 +67,12 @@ type Action =
   | { type: 'DELETE_REPORT'; payload: string }
   | { type: 'ADD_REPORT_TEMPLATE'; payload: ReportTemplate }
   | { type: 'DELETE_REPORT_TEMPLATE'; payload: string }
+  | { type: 'SET_WORK_CONFIG'; payload: WorkConfig }
+  | { type: 'SET_TAX_CONFIG'; payload: TaxConfig }
+  | { type: 'ADD_EXPENDITURE'; payload: Expenditure }
+  | { type: 'UPDATE_EXPENDITURE'; payload: Expenditure }
+  | { type: 'DELETE_EXPENDITURE'; payload: string }
+  | { type: 'SET_ANNUAL_NET_INCOME'; payload: number }
   | { type: 'LOAD_STATE'; payload: FinancialState }
 
 const STORAGE_KEY = 'fintrack-data-v2'
@@ -82,6 +94,10 @@ const defaultState: FinancialState = {
   cashBalance: 0,
   reports: [],
   reportTemplates: [],
+  workConfig: null,
+  taxConfig: null,
+  expenditures: [],
+  annualNetIncome: 0,
 }
 
 // Load initial state from localStorage
@@ -365,6 +381,23 @@ function financialReducer(state: FinancialState, action: Action): FinancialState
       return { ...state, reportTemplates: [...state.reportTemplates, action.payload] }
     case 'DELETE_REPORT_TEMPLATE':
       return { ...state, reportTemplates: state.reportTemplates.filter((t) => t.id !== action.payload) }
+    case 'SET_WORK_CONFIG':
+      return { ...state, workConfig: action.payload }
+    case 'SET_TAX_CONFIG':
+      return { ...state, taxConfig: action.payload }
+    case 'ADD_EXPENDITURE':
+      return { ...state, expenditures: [...state.expenditures, action.payload] }
+    case 'UPDATE_EXPENDITURE':
+      return {
+        ...state,
+        expenditures: state.expenditures.map((exp) =>
+          exp.id === action.payload.id ? action.payload : exp
+        ),
+      }
+    case 'DELETE_EXPENDITURE':
+      return { ...state, expenditures: state.expenditures.filter((exp) => exp.id !== action.payload) }
+    case 'SET_ANNUAL_NET_INCOME':
+      return { ...state, annualNetIncome: action.payload }
     case 'LOAD_STATE':
       return { 
         ...action.payload, 
@@ -379,6 +412,12 @@ function financialReducer(state: FinancialState, action: Action): FinancialState
         firstName: action.payload.firstName || '',
         reports: action.payload.reports || [],
         reportTemplates: action.payload.reportTemplates || [],
+        workConfig: action.payload.workConfig || null,
+        taxConfig: action.payload.taxConfig
+          ? { ...DEFAULT_TAX_CONFIG, ...action.payload.taxConfig }
+          : null,
+        expenditures: action.payload.expenditures || [],
+        annualNetIncome: action.payload.annualNetIncome ?? 0,
       }
     default:
       return state
@@ -424,6 +463,12 @@ interface FinancialContextType {
   deleteReport: (id: string) => void
   createReportTemplate: (template: Omit<ReportTemplate, 'id'>) => void
   deleteReportTemplate: (id: string) => void
+  setWorkConfig: (config: WorkConfig) => void
+  setTaxConfig: (config: TaxConfig) => void
+  addExpenditure: (expenditure: Omit<Expenditure, 'id' | 'createdAt' | 'updatedAt'>) => void
+  updateExpenditure: (expenditure: Expenditure) => void
+  deleteExpenditure: (id: string) => void
+  setAnnualNetIncome: (income: number) => void
   totalAssets: number
   totalLiabilities: number
   netWorth: number
@@ -586,6 +631,41 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'DELETE_REPORT_TEMPLATE', payload: id })
   }
 
+  const setWorkConfig = (config: WorkConfig) => {
+    dispatch({ type: 'SET_WORK_CONFIG', payload: config })
+  }
+
+  const setTaxConfig = (config: TaxConfig) => {
+    dispatch({ type: 'SET_TAX_CONFIG', payload: config })
+  }
+
+  const addExpenditure = (expenditure: Omit<Expenditure, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const now = new Date().toISOString()
+    const newExpenditure: Expenditure = {
+      ...expenditure,
+      id: generateId(),
+      createdAt: now,
+      updatedAt: now,
+    }
+    dispatch({ type: 'ADD_EXPENDITURE', payload: newExpenditure })
+  }
+
+  const updateExpenditure = (expenditure: Expenditure) => {
+    const updatedExpenditure = {
+      ...expenditure,
+      updatedAt: new Date().toISOString(),
+    }
+    dispatch({ type: 'UPDATE_EXPENDITURE', payload: updatedExpenditure })
+  }
+
+  const deleteExpenditure = (id: string) => {
+    dispatch({ type: 'DELETE_EXPENDITURE', payload: id })
+  }
+
+  const setAnnualNetIncome = (income: number) => {
+    dispatch({ type: 'SET_ANNUAL_NET_INCOME', payload: income })
+  }
+
   const addSavingsGoal = (goal: Omit<SavingsGoal, 'id' | 'dateCreated'>) => {
     const newGoal: SavingsGoal = {
       ...goal,
@@ -745,6 +825,12 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         deleteReport,
         createReportTemplate,
         deleteReportTemplate,
+        setWorkConfig,
+        setTaxConfig,
+        addExpenditure,
+        updateExpenditure,
+        deleteExpenditure,
+        setAnnualNetIncome,
         totalAssets,
         totalLiabilities,
         netWorth,

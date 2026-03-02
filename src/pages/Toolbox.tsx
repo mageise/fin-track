@@ -59,12 +59,12 @@ export function Toolbox() {
 
     // Row 2 - Analysis
     {
-      id: 'expenses',
-      name: t('tool_expenses'),
+      id: 'income-expenditure',
+      name: t('tool_incomeExpenditure'),
       icon: <Receipt className="w-16 h-16 text-white" />,
-      path: '/expenses',
+      path: '/income-expenditure',
       color: 'teal',
-      isPlaceholder: true,
+      isPlaceholder: false,
     },
     {
       id: 'debt',
@@ -113,8 +113,8 @@ export function Toolbox() {
       name: t('tool_tax'),
       icon: <Calculator className="w-16 h-16 text-white" />,
       path: '/tax',
-      color: 'emerald',
-      isPlaceholder: true,
+      color: 'green',
+      isPlaceholder: false,
     },
     {
       id: 'risk',

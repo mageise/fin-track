@@ -12,7 +12,7 @@ Guidelines for consistent UI/UX across FinTrack features.
 
 ### Header Pattern
 - Back link: ArrowLeft icon with theme-colored hover state
-- Page icon: `w-10 h-10` with theme color
+- Page icon: `w-10 h-10` with theme color, same icon as Toolbox tile
 - Title: `text-4xl font-bold text-gray-800`
 - Subtitle: `text-gray-600`
 
@@ -169,4 +169,4 @@ When implementing a new feature:
 
 ---
 
-**Last updated:** February 2025
+**Last updated:** February 2026

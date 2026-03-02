@@ -498,13 +498,6 @@ This feature must follow FinTrack UI guidelines:
 **Status:** Reports feature is FULLY IMPLEMENTED (MVP + Standard Release)
 **Remaining:** Email functionality (optional, deferred to v2)
 
-### References
-- Card patterns: `src/pages/Savings.tsx`
-- Chart implementations: `src/pages/Performance.tsx`
-- Date handling: `src/pages/InvestmentPortfolio.tsx`
-- Export logic: Native JS Blob API used for CSV
-- Modal patterns: `src/components/InvestmentForm.tsx`
-
 ## References
 
 - Card patterns: `src/pages/Savings.tsx`

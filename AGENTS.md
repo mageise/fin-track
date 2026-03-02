@@ -1,6 +1,62 @@
-# AGENTS.md - FinTrack Coding Guidelines
+# AGENTS.md - Developer Guidelines
 
-This document provides guidelines for AI agents and developers working on the FinTrack Finance Tracker application.
+This document provides guidelines for agentic coding agents operating in this repository.
+
+---
+
+## Development Workflow Protocol
+
+Rule: Never commit/push without permission
+
+### Standard Workflow
+
+1. **Plan** - Present feature plan with:
+   - Brief description (1-2 sentences)
+   - Todo list of specific changes
+   - Files affected
+
+   Iterate with user if needed (1-2 rounds, or more if necessary)
+
+2. **Implement** - Write code following the plan
+
+3. **Verify** - Run pre-commit checks:
+   ```bash
+   npm run build
+   npm run lint
+   ```
+
+4. **Present** - Show completed work to user
+
+5. **Address Feedback** - Fix any issues if found
+
+6. **Document** - Update documentation for significant changes:
+   - README.md: new or updated features/widgets, API changes, setup/config changes
+   - AGENTS.md: workflow changes or new guidelines as needed
+   - Skip for trivial fixes
+
+7. **Request Commit** - Ask "Should I commit?" with draft message (50/72 rule):
+   - First line: max 50 chars, summary of what/why
+   - Blank line
+   - Body: max 72 chars per line, detailed explanation
+
+   Example:
+   ```
+   add fetch timeout to DailyQuote widget
+
+   prevents UI from hanging when quotable.io is unavailable.
+   falls back to local quotes after 5 second timeout.
+   ```
+
+8. **Request Deploy** - After commit, ask "Should I push to deploy?"
+
+### Speed-Path for Small Fixes
+
+For trivial fixes (typos, minor bug fixes):
+- Plan → Implement → Verify → Commit → Deploy
+
+Skip the full presentation/feedback loop for obvious fixes.
+
+---
 
 ## Build, Lint, and Test Commands
 
@@ -23,6 +79,8 @@ npm test -- src/tests/App.test.tsx  # Run single test file
 npm test -- -t "renders without crashing"  # Run test by name
 npm run test:ui         # Run tests with Vitest UI
 ```
+
+---
 
 ## Code Style Guidelines
 
@@ -169,6 +227,8 @@ src/
 - Use `useCallback` for function props passed to children
 - Avoid unnecessary re-renders with proper dependency arrays
 - Lazy load heavy components with React.lazy() when needed
+
+---
 
 ## Project-Specific Notes
 

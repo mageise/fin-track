@@ -44,7 +44,7 @@ Tools for deeper insights into spending, debt, investment performance, and gener
 
 Track and analyze your spending patterns across different categories.
 
-- [ ] Category-based tracking
+- [x] Category-based tracking
 - [ ] Recurring expense detection
 - [ ] Spending insights
     
@@ -106,8 +106,10 @@ Plan your retirement income, withdrawals, and tax optimization strategies.
 
 ### Tax Calculator
 
-Estimate taxes on investments and optimize your tax strategy.
+German income tax (Einkommensteuer) calculation and investment tax estimation.
 
+- [x] German income tax calculation (§32a EStG)
+- [x] Solidarity surcharge (Solidaritätszuschlag)
 - [ ] Capital gains estimation
 - [ ] Tax-efficient withdrawals
 - [ ] Year-end planning
@@ -161,6 +163,13 @@ Configure app preferences including currency, language, and theme.
 ## General
 
 General ideas, brainstorming and future considerations not yet categorized.
+
+### FinTrack Variant: Junior Edition
+
+- Finance tools for kids
+- Simple, fresh approach to finance "stuff"
+- Playful look and usage incl. gamification
+- Examples: Pocket Money, Savings Goals, Reward, Budget Management
 
 ### Game Concepts
 
