@@ -1,7 +1,7 @@
 import { createContext, useContext, useReducer, useEffect, useRef, type ReactNode } from 'react'
 import type { Asset, Liability, NetWorthHistory, Investment, SavingsGoal, BudgetScenario, CashAccount, WatchlistItem, Report, ReportTemplate } from '../types/financial'
-import type { WorkConfig, TaxConfig, Expenditure } from '../types/incomeExpenditure'
-import { DEFAULT_TAX_CONFIG } from '../types/incomeExpenditure'
+import type { WorkPeriod, TaxConfig, Expenditure } from '../types/incomeExpenditure'
+import { DEFAULT_TAX_CONFIG, DEFAULT_WORK_PERIODS } from '../types/incomeExpenditure'
 
 export type Locale = 'de' | 'en'
 export type Currency = 'EUR' | 'USD'
@@ -23,7 +23,7 @@ interface FinancialState {
   cashBalance: number
   reports: Report[]
   reportTemplates: ReportTemplate[]
-  workConfig: WorkConfig | null
+  workPeriods: WorkPeriod[]
   taxConfig: TaxConfig | null
   expenditures: Expenditure[]
   annualNetIncome: number
@@ -67,7 +67,10 @@ type Action =
   | { type: 'DELETE_REPORT'; payload: string }
   | { type: 'ADD_REPORT_TEMPLATE'; payload: ReportTemplate }
   | { type: 'DELETE_REPORT_TEMPLATE'; payload: string }
-  | { type: 'SET_WORK_CONFIG'; payload: WorkConfig }
+  | { type: 'SET_WORK_PERIODS'; payload: WorkPeriod[] }
+  | { type: 'ADD_WORK_PERIOD'; payload: WorkPeriod }
+  | { type: 'UPDATE_WORK_PERIOD'; payload: WorkPeriod }
+  | { type: 'DELETE_WORK_PERIOD'; payload: string }
   | { type: 'SET_TAX_CONFIG'; payload: TaxConfig }
   | { type: 'ADD_EXPENDITURE'; payload: Expenditure }
   | { type: 'UPDATE_EXPENDITURE'; payload: Expenditure }
@@ -94,7 +97,7 @@ const defaultState: FinancialState = {
   cashBalance: 0,
   reports: [],
   reportTemplates: [],
-  workConfig: null,
+  workPeriods: DEFAULT_WORK_PERIODS,
   taxConfig: null,
   expenditures: [],
   annualNetIncome: 0,
@@ -381,8 +384,19 @@ function financialReducer(state: FinancialState, action: Action): FinancialState
       return { ...state, reportTemplates: [...state.reportTemplates, action.payload] }
     case 'DELETE_REPORT_TEMPLATE':
       return { ...state, reportTemplates: state.reportTemplates.filter((t) => t.id !== action.payload) }
-    case 'SET_WORK_CONFIG':
-      return { ...state, workConfig: action.payload }
+    case 'SET_WORK_PERIODS':
+      return { ...state, workPeriods: action.payload }
+    case 'ADD_WORK_PERIOD':
+      return { ...state, workPeriods: [...state.workPeriods, action.payload] }
+    case 'UPDATE_WORK_PERIOD':
+      return {
+        ...state,
+        workPeriods: state.workPeriods.map((wp) =>
+          wp.id === action.payload.id ? action.payload : wp
+        ),
+      }
+    case 'DELETE_WORK_PERIOD':
+      return { ...state, workPeriods: state.workPeriods.filter((wp) => wp.id !== action.payload) }
     case 'SET_TAX_CONFIG':
       return { ...state, taxConfig: action.payload }
     case 'ADD_EXPENDITURE':
@@ -412,7 +426,7 @@ function financialReducer(state: FinancialState, action: Action): FinancialState
         firstName: action.payload.firstName || '',
         reports: action.payload.reports || [],
         reportTemplates: action.payload.reportTemplates || [],
-        workConfig: action.payload.workConfig || null,
+        workPeriods: action.payload.workPeriods || DEFAULT_WORK_PERIODS,
         taxConfig: action.payload.taxConfig
           ? { ...DEFAULT_TAX_CONFIG, ...action.payload.taxConfig }
           : null,
@@ -463,7 +477,10 @@ interface FinancialContextType {
   deleteReport: (id: string) => void
   createReportTemplate: (template: Omit<ReportTemplate, 'id'>) => void
   deleteReportTemplate: (id: string) => void
-  setWorkConfig: (config: WorkConfig) => void
+  setWorkPeriods: (periods: WorkPeriod[]) => void
+  addWorkPeriod: (period: WorkPeriod) => void
+  updateWorkPeriod: (period: WorkPeriod) => void
+  deleteWorkPeriod: (id: string) => void
   setTaxConfig: (config: TaxConfig) => void
   addExpenditure: (expenditure: Omit<Expenditure, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateExpenditure: (expenditure: Expenditure) => void
@@ -631,8 +648,20 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'DELETE_REPORT_TEMPLATE', payload: id })
   }
 
-  const setWorkConfig = (config: WorkConfig) => {
-    dispatch({ type: 'SET_WORK_CONFIG', payload: config })
+  const setWorkPeriods = (periods: WorkPeriod[]) => {
+    dispatch({ type: 'SET_WORK_PERIODS', payload: periods })
+  }
+
+  const addWorkPeriod = (period: WorkPeriod) => {
+    dispatch({ type: 'ADD_WORK_PERIOD', payload: period })
+  }
+
+  const updateWorkPeriod = (period: WorkPeriod) => {
+    dispatch({ type: 'UPDATE_WORK_PERIOD', payload: period })
+  }
+
+  const deleteWorkPeriod = (id: string) => {
+    dispatch({ type: 'DELETE_WORK_PERIOD', payload: id })
   }
 
   const setTaxConfig = (config: TaxConfig) => {
@@ -825,7 +854,10 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         deleteReport,
         createReportTemplate,
         deleteReportTemplate,
-        setWorkConfig,
+        setWorkPeriods,
+        addWorkPeriod,
+        updateWorkPeriod,
+        deleteWorkPeriod,
         setTaxConfig,
         addExpenditure,
         updateExpenditure,

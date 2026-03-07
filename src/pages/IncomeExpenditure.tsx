@@ -5,6 +5,7 @@ import { useFormatters } from '../hooks/useFormatters'
 import { useFinancial } from '../contexts/FinancialContext'
 import { Card } from '../components/Card'
 import { ExpenditureList } from '../components/expenditure/ExpenditureList'
+import { FREQUENCIES, type Frequency } from '../types/incomeExpenditure'
 
 export function IncomeExpenditurePage() {
   const { t } = useTranslation()
@@ -14,8 +15,21 @@ export function IncomeExpenditurePage() {
   const annualNetIncome = state.annualNetIncome || 0
   const monthlyIncome = Math.round(annualNetIncome / 12)
   const expenditures = state.expenditures || []
-  const totalMonthlyExpenditures = expenditures.reduce((sum, exp) => sum + exp.amount, 0)
-  const monthlyBuffer = monthlyIncome - totalMonthlyExpenditures
+
+  const toMonthlyAmount = (amount: number, frequency: Frequency): number => {
+    const freq = FREQUENCIES.find(f => f.value === frequency)
+    return freq ? amount / freq.months : amount
+  }
+
+  const totalMonthlyExpenditures = expenditures.reduce(
+    (sum, exp) => sum + toMonthlyAmount(exp.amount, exp.frequency),
+    0
+  )
+  const monthlyBalance = monthlyIncome - totalMonthlyExpenditures
+
+  const monthlyHousingCosts = expenditures
+    .filter(exp => exp.subcategory === 'Home' || exp.subcategory === 'Utility')
+    .reduce((sum, exp) => sum + toMonthlyAmount(exp.amount, exp.frequency), 0)
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -64,12 +78,14 @@ export function IncomeExpenditurePage() {
 
           <Card>
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <PiggyBank className="w-6 h-6 text-blue-600" />
+              <div className={`p-3 rounded-lg ${monthlyBalance >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+                <PiggyBank className={`w-6 h-6 ${monthlyBalance >= 0 ? 'text-green-600' : 'text-red-600'}`} />
               </div>
               <div>
-                <p className="text-sm text-gray-600">{t('monthlyBuffer')}</p>
-                <p className="text-2xl font-bold text-blue-600">{formatCurrency(monthlyBuffer)}</p>
+                <p className="text-sm text-gray-600">{t('monthlyBalance')}</p>
+                <p className={`text-2xl font-bold ${monthlyBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(monthlyBalance)}
+                </p>
               </div>
             </div>
           </Card>
@@ -80,8 +96,8 @@ export function IncomeExpenditurePage() {
                 <Calculator className="w-6 h-6 text-amber-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">{t('taxPrepayment')}</p>
-                <p className="text-lg font-bold text-amber-600">Coming soon</p>
+                <p className="text-sm text-gray-600">{t('monthlyHousing')}</p>
+                <p className="text-lg font-bold text-amber-600">{formatCurrency(monthlyHousingCosts)}</p>
               </div>
             </div>
           </Card>

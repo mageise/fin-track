@@ -278,22 +278,26 @@ function calculateSolidaritySurcharge(incomeTax: number, year: TaxYear): number 
 
 function calculateSoliBreakdown(incomeTax: number, year: TaxYear): SoliBreakdown {
   if (incomeTax <= 0) {
-    return { zone: 'freigrenze', name: 'Freigrenze', incomeTax: 0, soliAmount: 0 }
+    const rate = 0
+    return { zone: 'freigrenze', name: 'Freigrenze', rate, incomeTax: 0, soliAmount: 0 }
   }
 
   const thresholds = getSoliThresholds(year)
 
   if (incomeTax <= thresholds.freigrenze) {
-    return { zone: 'freigrenze', name: 'Freigrenze', incomeTax, soliAmount: 0 }
+    const rate = 0
+    return { zone: 'freigrenze', name: 'Freigrenze', rate, incomeTax, soliAmount: 0 }
   }
 
   if (incomeTax <= thresholds.upperLimit) {
     const soliAmount = Math.round(100 * (incomeTax - thresholds.freigrenze) * 0.119) / 100
-    return { zone: 'milderung', name: 'Milderungszone', incomeTax, soliAmount }
+    const rate = (soliAmount / incomeTax) * 100
+    return { zone: 'milderung', name: 'Milderungszone', rate, incomeTax, soliAmount }
   }
 
   const soliAmount = Math.round(100 * incomeTax * 0.055) / 100
-  return { zone: 'voll', name: 'Vollzone (5,5%)', incomeTax, soliAmount }
+  const rate = (soliAmount / incomeTax) * 100
+  return { zone: 'voll', name: 'Vollzone (5,5%)', rate, incomeTax, soliAmount }
 }
 
 export function calculateGermanTax(
@@ -316,6 +320,7 @@ export function calculateGermanTax(
   const soliBreakdown = calculateSoliBreakdown(incomeTax, year)
   const totalTax = incomeTax + solidaritySurcharge
   const effectiveRate = grossIncome > 0 ? (totalTax / grossIncome) * 100 : 0
+  const incomeTaxRate = grossIncome > 0 ? (incomeTax / grossIncome) * 100 : 0
 
   const marginalRate = calculateMarginalRate(taxableIncome, year)
   const breakdown = calculateBreakdown(taxableIncome, year)
@@ -324,6 +329,7 @@ export function calculateGermanTax(
     grossIncome,
     taxableIncome,
     incomeTax,
+    incomeTaxRate,
     solidaritySurcharge,
     soliBreakdown,
     totalTax,

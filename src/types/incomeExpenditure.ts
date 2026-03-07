@@ -1,15 +1,15 @@
-export interface WorkConfig {
+export interface WorkPeriod {
+  id: string
+  period: string
+  workdays: number
+  workingHours: number
   hourlyRate: number
-  dailyHours: number
-  workDays: number
+  incomeYear: boolean
+  taxYear: boolean
 }
 
 export interface TaxConfig {
-  incomeTaxRate: number
   taxExemption: number
-  solidaritySurcharge: number
-  incomeAdjustment: number
-  childBenefit: number
 }
 
 export type ExpenditureCategory = 'fixed_cost' | 'reserve' | 'investment'
@@ -42,24 +42,26 @@ export interface QuarterlyData {
 }
 
 export interface IncomeExpenditureData {
-  workConfig: WorkConfig | null
+  workPeriods: WorkPeriod[]
   taxConfig: TaxConfig | null
   expenditures: Expenditure[]
 }
 
-export const DEFAULT_WORK_CONFIG: WorkConfig = {
-  hourlyRate: 0,
-  dailyHours: 8,
-  workDays: 220,
+export const DEFAULT_TAX_CONFIG: TaxConfig = {
+  taxExemption: 11604,
 }
 
-export const DEFAULT_TAX_CONFIG: TaxConfig = {
-  incomeTaxRate: 0,
-  taxExemption: 11604,
-  solidaritySurcharge: 5.5,
-  incomeAdjustment: 0,
-  childBenefit: 0,
-}
+export const DEFAULT_WORK_PERIODS: WorkPeriod[] = [
+  {
+    id: '1',
+    period: new Date().getFullYear().toString(),
+    workdays: 220,
+    workingHours: 8,
+    hourlyRate: 50,
+    incomeYear: true,
+    taxYear: true,
+  },
+]
 
 export const EXPENDITURE_CATEGORIES: {
   value: ExpenditureCategory

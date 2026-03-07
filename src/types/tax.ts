@@ -21,6 +21,7 @@ export interface TaxBreakdownZone {
 export interface SoliBreakdown {
   zone: 'freigrenze' | 'milderung' | 'voll'
   name: string
+  rate: number
   incomeTax: number
   soliAmount: number
 }
@@ -29,6 +30,7 @@ export interface TaxResult {
   grossIncome: number
   taxableIncome: number
   incomeTax: number
+  incomeTaxRate: number
   solidaritySurcharge: number
   soliBreakdown: SoliBreakdown
   totalTax: number
