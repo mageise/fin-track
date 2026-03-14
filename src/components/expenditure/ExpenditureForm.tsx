@@ -14,7 +14,7 @@ export function ExpenditureForm({ expenditure, onClose }: ExpenditureFormProps) 
 
   const [formData, setFormData] = useState({
     name: expenditure?.name || '',
-    category: expenditure?.category || 'fixed_cost' as ExpenditureCategory,
+    category: expenditure?.category || 'fixedCosts' as ExpenditureCategory,
     subcategory: expenditure?.subcategory || '',
     amount: expenditure?.amount || 0,
     frequency: expenditure?.frequency || 'monthly' as Frequency,
@@ -64,7 +64,7 @@ export function ExpenditureForm({ expenditure, onClose }: ExpenditureFormProps) 
           >
             {EXPENDITURE_CATEGORIES.map((cat) => (
               <option key={cat.value} value={cat.value}>
-                {cat.label}
+                {t(cat.value)}
               </option>
             ))}
           </select>
@@ -82,7 +82,7 @@ export function ExpenditureForm({ expenditure, onClose }: ExpenditureFormProps) 
             <option value="">-</option>
             {subcategories.map((sub) => (
               <option key={sub} value={sub}>
-                {sub}
+                {t(('subcat_' + sub) as any) || sub}
               </option>
             ))}
           </select>
@@ -134,6 +134,19 @@ export function ExpenditureForm({ expenditure, onClose }: ExpenditureFormProps) 
         <label htmlFor="isRecurring" className="ml-2 text-sm font-medium text-gray-700">
           {t('recurring')}
         </label>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {t('notes')}
+        </label>
+        <input
+          type="text"
+          value={formData.notes}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          placeholder={t('notes')}
+        />
       </div>
 
       <div className="flex justify-end space-x-3">

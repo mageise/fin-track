@@ -75,6 +75,7 @@ type Action =
   | { type: 'ADD_EXPENDITURE'; payload: Expenditure }
   | { type: 'UPDATE_EXPENDITURE'; payload: Expenditure }
   | { type: 'DELETE_EXPENDITURE'; payload: string }
+  | { type: 'CLEAR_EXPENDITURES' }
   | { type: 'SET_ANNUAL_NET_INCOME'; payload: number }
   | { type: 'LOAD_STATE'; payload: FinancialState }
 
@@ -410,6 +411,8 @@ function financialReducer(state: FinancialState, action: Action): FinancialState
       }
     case 'DELETE_EXPENDITURE':
       return { ...state, expenditures: state.expenditures.filter((exp) => exp.id !== action.payload) }
+    case 'CLEAR_EXPENDITURES':
+      return { ...state, expenditures: [] }
     case 'SET_ANNUAL_NET_INCOME':
       return { ...state, annualNetIncome: action.payload }
     case 'LOAD_STATE':
@@ -485,6 +488,7 @@ interface FinancialContextType {
   addExpenditure: (expenditure: Omit<Expenditure, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateExpenditure: (expenditure: Expenditure) => void
   deleteExpenditure: (id: string) => void
+  clearExpenditures: () => void
   setAnnualNetIncome: (income: number) => void
   totalAssets: number
   totalLiabilities: number
@@ -691,6 +695,10 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'DELETE_EXPENDITURE', payload: id })
   }
 
+  const clearExpenditures = () => {
+    dispatch({ type: 'CLEAR_EXPENDITURES' })
+  }
+
   const setAnnualNetIncome = (income: number) => {
     dispatch({ type: 'SET_ANNUAL_NET_INCOME', payload: income })
   }
@@ -862,6 +870,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         addExpenditure,
         updateExpenditure,
         deleteExpenditure,
+        clearExpenditures,
         setAnnualNetIncome,
         totalAssets,
         totalLiabilities,

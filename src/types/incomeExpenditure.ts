@@ -12,9 +12,9 @@ export interface TaxConfig {
   taxExemption: number
 }
 
-export type ExpenditureCategory = 'fixed_cost' | 'reserve' | 'investment'
+export type ExpenditureCategory = 'fixedCosts' | 'reserves' | 'investments'
 
-export type Frequency = 'monthly' | 'quarterly' | 'yearly'
+export type Frequency = 'monthly' | 'quarterly' | 'yearly' | 'bimonthly'
 
 export interface Expenditure {
   id: string
@@ -68,15 +68,15 @@ export const EXPENDITURE_CATEGORIES: {
   label: string
   icon: string
 }[] = [
-  { value: 'fixed_cost', label: 'Fixed Cost', icon: 'CreditCard' },
-  { value: 'reserve', label: 'Reserve', icon: 'PiggyBank' },
-  { value: 'investment', label: 'Investment', icon: 'TrendingUp' },
+  { value: 'fixedCosts', label: 'Fixed Costs', icon: 'CreditCard' },
+  { value: 'reserves', label: 'Reserves', icon: 'PiggyBank' },
+  { value: 'investments', label: 'Investments', icon: 'TrendingUp' },
 ]
 
 export const EXPENDITURE_SUBCATEGORIES: Record<ExpenditureCategory, string[]> = {
-  fixed_cost: ['Other', 'Home', 'Utility', 'Insurance', 'Car', 'Shopping', 'Family & Co.'],
-  reserve: ['Other', 'House', 'Car', 'Tax', 'Repayment', 'Vacation', 'Purchase', 'Pension', 'Saving'],
-  investment: ['Other', 'ETF', 'Stock', 'Bond', 'Crypto', 'Pension'],
+  fixedCosts: ['Other', 'Home', 'Utility', 'Insurance', 'Car', 'Shopping', 'FamilyCo'],
+  reserves: ['Other', 'House', 'Car', 'Tax', 'Repayment', 'Vacation', 'Purchase', 'Retirement', 'Saving'],
+  investments: ['Other', 'ETF', 'Stock', 'Bond', 'Crypto', 'Pension'],
 }
 
 export const FREQUENCIES: {
@@ -85,6 +85,7 @@ export const FREQUENCIES: {
   months: number
 }[] = [
   { value: 'monthly', label: 'Monthly', months: 1 },
+  { value: 'bimonthly', label: 'Bimonthly', months: 2 },
   { value: 'quarterly', label: 'Quarterly', months: 3 },
   { value: 'yearly', label: 'Yearly', months: 12 },
 ]

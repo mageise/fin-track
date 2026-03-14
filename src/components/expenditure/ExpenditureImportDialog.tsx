@@ -11,6 +11,7 @@ interface ImportPreviewItem {
   subcategory: string
   amount: number
   frequency: Frequency
+  notes: string
   isValid: boolean
   errors: string[]
   selected: boolean
@@ -22,6 +23,7 @@ interface ColumnMapping {
   subcategory: string
   amount: string
   frequency: string
+  notes: string
 }
 
 const DEFAULT_MAPPING: ColumnMapping = {
@@ -29,13 +31,15 @@ const DEFAULT_MAPPING: ColumnMapping = {
   subcategory: '',
   amount: '',
   frequency: '',
+  notes: '',
 }
 
 const HEADER_PATTERNS: Record<keyof ColumnMapping, string[]> = {
-  name: ['name', 'bezeichnung', 'titel', 'description', 'bezeichnung'],
+  name: ['name', 'bezeichnung', 'titel'],
   subcategory: ['subcategory', 'unterkategorie', 'category', 'kategorie'],
-  amount: ['amount', 'betrag', 'preis', 'summe', 'value'],
-  frequency: ['frequency', 'häufigkeit', 'intervall', 'period'],
+  amount: ['amount', 'betrag', 'preis', 'summe', 'value', 'monatlich', 'monthly'],
+  frequency: ['frequency', 'häufigkeit', 'intervall', 'period', 'zeitraum', 'periode', 'interval'],
+  notes: ['notes', 'notizen', 'hinweise', 'description', 'beschreibung', 'comments'],
 }
 
 function findBestHeaderMatch(headers: string[], patterns: string[]): string {
@@ -48,6 +52,58 @@ function findBestHeaderMatch(headers: string[], patterns: string[]): string {
     }
   }
   return ''
+}
+
+const SUBCATEGORY_VALUE_PATTERNS: Record<string, string[]> = {
+  'Home': ['home', 'wohnung', 'miete', 'rent', 'housing', 'house', 'haus'],
+  'Utility': ['utility', 'nebenkosten', 'strom', 'gas', 'water'],
+  'Insurance': ['insurance', 'versicherung'],
+  'Car': ['car', 'auto', 'fahrzeug', 'kfz'],
+  'Shopping': ['shopping', 'einkaufen', 'einkauf', 'einkäufe'],
+  'FamilyCo': ['family', 'familie'],
+  'House': ['house', 'haus'],
+  'Tax': ['tax', 'steuer'],
+  'Repayment': ['repayment', 'tilgung'],
+  'Vacation': ['vacation', 'urlaub', 'reise'],
+  'Purchase': ['purchase', 'anschaffung', 'kauf'],
+  'Pension': ['pension', 'rente'],
+  'Saving': ['saving', 'sparen'],
+  'ETF': ['etf'],
+  'Stock': ['stock', 'aktien', 'aktie'],
+  'Bond': ['bond', 'anleihe'],
+  'Crypto': ['crypto', 'krypt'],
+  'Other': ['other', 'sonstiges', 'sonstige'],
+}
+
+const FREQUENCY_VALUE_PATTERNS: Record<string, string[]> = {
+  'bimonthly': ['bimonthly', 'zweimonatlich', 'two-monthly', 'every two months', 'alle zwei monate'],
+  'quarterly': ['quarterly', 'vierteljährlich', 'quartalsweise', 'quarter', 'quartal'],
+  'yearly': ['yearly', 'jährlich', 'jährliche', 'year', 'jahr'],
+  'monthly': ['monthly', 'monatlich', 'monatliche', 'month', 'monat'],
+}
+
+function findBestFrequencyMatch(value: string): string {
+  const normalized = value.toLowerCase().trim()
+  for (const [freq, patterns] of Object.entries(FREQUENCY_VALUE_PATTERNS)) {
+    for (const pattern of patterns) {
+      if (normalized.includes(pattern)) {
+        return freq
+      }
+    }
+  }
+  return 'monthly'
+}
+
+function findBestSubcategoryMatch(value: string): string {
+  const normalized = value.toLowerCase().trim()
+  for (const [subcategory, patterns] of Object.entries(SUBCATEGORY_VALUE_PATTERNS)) {
+    for (const pattern of patterns) {
+      if (normalized.includes(pattern)) {
+        return subcategory
+      }
+    }
+  }
+  return 'Other'
 }
 
 function generateId(): string {
@@ -65,7 +121,7 @@ interface ExpenditureImportDialogProps {
   onClose: () => void
 }
 
-export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClose }: ExpenditureImportDialogProps) {
+export function ExpenditureImportDialog({ initialCategory = 'fixedCosts', onClose }: ExpenditureImportDialogProps) {
   const { t } = useTranslation()
   const { addExpenditure } = useFinancial()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -73,7 +129,7 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
   const [category, setCategory] = useState<ExpenditureCategory>(initialCategory)
   const [previewData, setPreviewData] = useState<ImportPreviewItem[]>([])
   const [columnMapping, setColumnMapping] = useState<ColumnMapping>(DEFAULT_MAPPING)
-  const [csvHeaders, setCsvHeaders] = useState<string[]>([])
+  const [processedHeaders, setProcessedHeaders] = useState<{value: string, display: string}[]>([])
   const [rawCSV, setRawCSV] = useState<string[][]>([])
   const [fileName, setFileName] = useState<string>('')
   const [showMapping, setShowMapping] = useState(false)
@@ -105,6 +161,10 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
     const headers = lines[0].map(h => h.toLowerCase().trim())
 
     const getIndex = (headerName: string): number => {
+      if (headerName?.startsWith('COLUMN_')) {
+        const colNum = parseInt(headerName.replace('COLUMN_', '')) - 1
+        return colNum
+      }
       if (!headerName) return -1
       return headers.indexOf(headerName.toLowerCase().trim())
     }
@@ -113,21 +173,19 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
     const subcategoryIdx = getIndex(mapping.subcategory)
     const amountIdx = getIndex(mapping.amount)
     const frequencyIdx = getIndex(mapping.frequency)
+    const notesIdx = getIndex(mapping.notes)
 
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i]
       if (line.length === 0 || line.every(cell => cell.trim() === '')) continue
 
       const name = nameIdx >= 0 ? (line[nameIdx] || '').trim() : ''
-      const subcategory = subcategoryIdx >= 0 ? (line[subcategoryIdx] || '').trim() : ''
+      const subcategory = subcategoryIdx >= 0 ? findBestSubcategoryMatch(line[subcategoryIdx] || '') : ''
       const amountRaw = amountIdx >= 0 ? parseNumber(line[amountIdx] || '') : null
       const frequencyRaw = frequencyIdx >= 0 ? (line[frequencyIdx] || '').trim().toLowerCase() : ''
+      const notes = notesIdx >= 0 ? (line[notesIdx] || '').trim() : ''
 
-      const frequency = frequencies.find(f => 
-        f.value === frequencyRaw || 
-        f.label.toLowerCase() === frequencyRaw ||
-        frequencyRaw.includes(f.value)
-      )?.value || 'monthly'
+      const frequency = (frequencyRaw ? findBestFrequencyMatch(frequencyRaw) : 'monthly') as Frequency
 
       const amount = amountRaw || 0
 
@@ -137,6 +195,7 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
         subcategory,
         amount,
         frequency,
+        notes,
         isValid: false,
         errors: [],
         selected: true,
@@ -188,14 +247,27 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
         }
 
         const headers = lines[0].map(h => h.trim())
-        setCsvHeaders(headers)
+        
+        // Process headers: generate pseudo values for empty headers
+        const processedHeaders = headers.map((header, idx) => {
+          if (header === '') {
+            const colLetter = String.fromCharCode(65 + idx) // A, B, C...
+            const pseudoValue = `COLUMN_${idx + 1}`
+            const display = t((`column_${colLetter}`) as any)
+            return { value: pseudoValue, display }
+          }
+          return { value: header, display: header }
+        })
+        
+        setProcessedHeaders(processedHeaders)
         setRawCSV(lines)
 
         const autoMapping: ColumnMapping = {
-          name: findBestHeaderMatch(headers, HEADER_PATTERNS.name),
+          name: findBestHeaderMatch(headers, HEADER_PATTERNS.name) || (headers[0] === '' ? 'COLUMN_1' : ''),
           subcategory: findBestHeaderMatch(headers, HEADER_PATTERNS.subcategory),
           amount: findBestHeaderMatch(headers, HEADER_PATTERNS.amount),
           frequency: findBestHeaderMatch(headers, HEADER_PATTERNS.frequency),
+          notes: findBestHeaderMatch(headers, HEADER_PATTERNS.notes),
         }
         setColumnMapping(autoMapping)
 
@@ -277,6 +349,8 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
         updated.frequency = freq?.value || 'monthly'
       } else if (field === 'name') {
         updated.name = value
+      } else if (field === 'notes') {
+        updated.notes = value
       }
 
       updated.errors = validateItem(updated)
@@ -287,24 +361,18 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
   }
 
   const handleImport = useCallback(() => {
-    const normalizeToMonthly = (amount: number, freq: Frequency): number => {
-      const freqInfo = frequencies.find(f => f.value === freq)
-      return freqInfo ? amount / freqInfo.months : amount
-    }
-
     const selectedItems = previewData.filter(item => item.selected && item.isValid)
 
     selectedItems.forEach(item => {
-      const normalizedAmount = normalizeToMonthly(item.amount, item.frequency)
-
       addExpenditure({
         name: item.name,
         category: category,
         subcategory: item.subcategory || undefined,
-        amount: normalizedAmount,
-        frequency: 'monthly',
+        amount: item.amount,
+        frequency: item.frequency,
         isRecurring: true,
         startDate: new Date().toISOString().split('T')[0],
+        notes: item.notes || undefined,
       })
     })
 
@@ -317,7 +385,7 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex justify-between items-center">
           <div>
@@ -343,7 +411,7 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
           >
             {EXPENDITURE_CATEGORIES.map(cat => (
               <option key={cat.value} value={cat.value}>
-                {cat.value === 'fixed_cost' ? t('fixedCosts') : cat.value === 'reserve' ? t('reserves') : t('investments')}
+                {t(cat.value)}
               </option>
             ))}
           </select>
@@ -424,7 +492,7 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
               {showMapping && (
                 <Card className="bg-teal-50">
                   <h3 className="font-medium mb-3">{t('columnMapping')}</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
                     <div>
                       <label className="block text-sm text-gray-600 mb-1">{t('expenditureName')} *</label>
                       <select
@@ -433,8 +501,8 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
                         className="w-full px-2 py-1 border rounded"
                       >
                         <option value="">--</option>
-                        {csvHeaders.map((header, idx) => (
-                          <option key={idx} value={header}>{header}</option>
+                        {processedHeaders.map((header, idx) => (
+                          <option key={idx} value={header.value}>{header.display}</option>
                         ))}
                       </select>
                     </div>
@@ -446,8 +514,8 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
                         className="w-full px-2 py-1 border rounded"
                       >
                         <option value="">--</option>
-                        {csvHeaders.map((header, idx) => (
-                          <option key={idx} value={header}>{header}</option>
+                        {processedHeaders.map((header, idx) => (
+                          <option key={idx} value={header.value}>{header.display}</option>
                         ))}
                       </select>
                     </div>
@@ -459,8 +527,8 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
                         className="w-full px-2 py-1 border rounded"
                       >
                         <option value="">--</option>
-                        {csvHeaders.map((header, idx) => (
-                          <option key={idx} value={header}>{header}</option>
+                        {processedHeaders.map((header, idx) => (
+                          <option key={idx} value={header.value}>{header.display}</option>
                         ))}
                       </select>
                     </div>
@@ -472,8 +540,21 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
                         className="w-full px-2 py-1 border rounded"
                       >
                         <option value="">--</option>
-                        {csvHeaders.map((header, idx) => (
-                          <option key={idx} value={header}>{header}</option>
+                        {processedHeaders.map((header, idx) => (
+                          <option key={idx} value={header.value}>{header.display}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">{t('notes')}</label>
+                      <select
+                        value={columnMapping.notes}
+                        onChange={(e) => handleMappingChange('notes', e.target.value)}
+                        className="w-full px-2 py-1 border rounded"
+                      >
+                        <option value="">--</option>
+                        {processedHeaders.map((header, idx) => (
+                          <option key={idx} value={header.value}>{header.display}</option>
                         ))}
                       </select>
                     </div>
@@ -522,6 +603,9 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
                         {t('frequency')}
                       </th>
                       <th className="px-3 py-3 text-left text-sm font-medium text-gray-600">
+                        {t('notes')}
+                      </th>
+                      <th className="px-3 py-3 text-left text-sm font-medium text-gray-600">
                         {t('status')}
                       </th>
                     </tr>
@@ -554,7 +638,7 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
                           >
                             <option value="">-</option>
                             {subcategories.map(sub => (
-                              <option key={sub} value={sub}>{sub}</option>
+                              <option key={sub} value={sub}>{t(('subcat_' + sub) as any) || sub}</option>
                             ))}
                           </select>
                         </td>
@@ -578,6 +662,14 @@ export function ExpenditureImportDialog({ initialCategory = 'fixed_cost', onClos
                               <option key={freq.value} value={freq.value}>{t(freq.value)}</option>
                             ))}
                           </select>
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="text"
+                            value={item.notes}
+                            onChange={(e) => handleUpdateItem(item.id, 'notes', e.target.value)}
+                            className="w-full px-2 py-1 border rounded text-sm"
+                          />
                         </td>
                         <td className="px-3 py-2 text-sm">
                           {item.errors.length > 0 ? (

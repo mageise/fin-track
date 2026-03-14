@@ -1,25 +1,27 @@
 import { useState } from 'react'
-import { SquarePlus, Upload } from 'lucide-react'
+import { SquarePlus, Upload, Edit2, Trash2, AlertCircle } from 'lucide-react'
 import { useFinancial } from '../../contexts/FinancialContext'
 import { useTranslation } from '../../hooks/useTranslation'
 import { useFormatters } from '../../hooks/useFormatters'
+import { Card } from '../Card'
 import { EXPENDITURE_CATEGORIES, FREQUENCIES, type Expenditure, type ExpenditureCategory, type Frequency } from '../../types/incomeExpenditure'
 import { ExpenditureForm } from './ExpenditureForm'
 import { ExpenditureImportDialog } from './ExpenditureImportDialog'
 
 export function ExpenditureList() {
-  const { state, deleteExpenditure } = useFinancial()
+  const { state, deleteExpenditure, clearExpenditures } = useFinancial()
   const { t } = useTranslation()
   const { formatCurrency } = useFormatters()
 
   const [showForm, setShowForm] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
-  const [importCategory, setImportCategory] = useState<ExpenditureCategory>('fixed_cost')
+  const [importCategory, setImportCategory] = useState<ExpenditureCategory>('fixedCosts')
   const [editingExpenditure, setEditingExpenditure] = useState<Expenditure | null>(null)
   const [expandedCategories, setExpandedCategories] = useState<Set<ExpenditureCategory>>(
-    new Set(['fixed_cost', 'reserve', 'investment'])
+    new Set(['fixedCosts', 'reserves', 'investments'])
   )
   const [expandedSubcategories, setExpandedSubcategories] = useState<Set<string>>(new Set())
+  const [showClearModal, setShowClearModal] = useState(false)
 
   const expenditures = state.expenditures || []
 
@@ -27,7 +29,7 @@ export function ExpenditureList() {
     if (!acc[exp.category]) {
       acc[exp.category] = {}
     }
-    const subcategory = exp.subcategory || 'Other'
+    const subcategory = exp.subcategory || '__unassigned__'
     if (!acc[exp.category][subcategory]) {
       acc[exp.category][subcategory] = []
     }
@@ -66,9 +68,7 @@ export function ExpenditureList() {
   }
 
   const handleDelete = (id: string) => {
-    if (confirm(t('confirmDelete') || 'Are you sure you want to delete this expenditure?')) {
-      deleteExpenditure(id)
-    }
+    deleteExpenditure(id)
   }
 
   const handleCloseForm = () => {
@@ -77,30 +77,33 @@ export function ExpenditureList() {
   }
 
   const getCategoryLabel = (category: ExpenditureCategory): string => {
-    switch (category) {
-      case 'fixed_cost':
-        return t('fixedCosts')
-      case 'reserve':
-        return t('reserves')
-      case 'investment':
-        return t('investments')
-      default:
-        return category
-    }
+    return t(category)
   }
 
-  if (expenditures.length === 0 && !showForm) {
+  if (expenditures.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <Card>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900">{t('expenditures')}</h3>
-          <button
-            onClick={() => setShowForm(true)}
-            className="text-teal-600 hover:text-teal-700"
-            title={t('addExpenditure')}
-          >
-            <SquarePlus className="w-6 h-6" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setImportCategory('fixedCosts')
+                setShowImportDialog(true)
+              }}
+              className="text-teal-600"
+              title={t('importExpenditures')}
+            >
+              <Upload className="w-6 h-6" />
+            </button>
+            <button
+              onClick={() => setShowForm(true)}
+              className="text-teal-600"
+              title={t('addExpenditure')}
+            >
+              <SquarePlus className="w-6 h-6" />
+            </button>
+          </div>
         </div>
         <div className="text-center py-8">
           <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -119,28 +122,42 @@ export function ExpenditureList() {
             </div>
           </div>
         )}
-      </div>
+
+        {showImportDialog && (
+          <ExpenditureImportDialog
+            initialCategory={importCategory}
+            onClose={() => setShowImportDialog(false)}
+          />
+        )}
+      </Card>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <Card>
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-gray-900">{t('expenditures')}</h3>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setShowClearModal(true)}
+            className="text-rose-600"
+            title={t('clearAllExpenditures')}
+          >
+            <Trash2 className="w-6 h-6" />
+          </button>
+          <button
             onClick={() => {
-              setImportCategory('fixed_cost')
+              setImportCategory('fixedCosts')
               setShowImportDialog(true)
             }}
-            className="text-teal-600 hover:text-teal-700"
+            className="text-teal-600"
             title={t('importExpenditures')}
           >
             <Upload className="w-6 h-6" />
           </button>
           <button
             onClick={() => setShowForm(true)}
-            className="text-teal-600 hover:text-teal-700"
+            className="text-teal-600"
             title={t('addExpenditure')}
           >
             <SquarePlus className="w-6 h-6" />
@@ -176,12 +193,18 @@ export function ExpenditureList() {
                   <span className="font-medium text-gray-900">{getCategoryLabel(category.value)}</span>
                   <span className="text-sm text-gray-500">({totalCount})</span>
                 </div>
-                <span className="font-semibold text-gray-700">{formatCurrency(totalMonthly)}/mo</span>
+                <span className="font-semibold text-gray-700">{formatCurrency(totalMonthly)}/{t('monthlyShort')}</span>
               </button>
 
               {isExpanded && totalCount > 0 && (
                 <div className="border-t bg-gray-50">
-                  {Object.entries(categorySubcats).map(([subcategory, exps]) => {
+                  {Object.entries(categorySubcats)
+                  .sort(([a], [b]) => {
+                    if (a === '__unassigned__') return 1
+                    if (b === '__unassigned__') return -1
+                    return 0
+                  })
+                  .map(([subcategory, exps]) => {
                     const subcatKey = `${category.value}-${subcategory}`
                     const isSubcatExpanded = expandedSubcategories.has(subcatKey)
                     const subcatTotal = exps.reduce((sum, exp) => sum + toMonthlyAmount(exp.amount, exp.frequency), 0)
@@ -204,9 +227,13 @@ export function ExpenditureList() {
                                 </svg>
                               )}
                             </span>
-                            <span className="text-sm font-medium text-gray-700">{subcategory}</span>
+                            <span className={`text-sm ${subcategory === '__unassigned__' ? 'text-gray-500 italic' : 'font-medium text-gray-700'}`}>
+                                  {subcategory === '__unassigned__'
+                                    ? t('subcat_Unassigned')
+                                    : t(('subcat_' + subcategory) as any) || subcategory}
+                                </span>
                           </div>
-                          <span className="text-sm text-gray-600">{formatCurrency(subcatTotal)}/mo</span>
+                          <span className="text-sm text-gray-600">{formatCurrency(subcatTotal)}/{t('monthlyShort')}</span>
                         </button>
 
                         {isSubcatExpanded && (
@@ -216,21 +243,26 @@ export function ExpenditureList() {
                                 <div>
                                   <p className="font-medium text-gray-900">{exp.name}</p>
                                   <p className="text-sm text-gray-500">
-                                    {formatCurrency(exp.amount)}/{t(exp.frequency)}
+                                    {formatCurrency(exp.amount)} {t(('frequency_' + exp.frequency) as any)}
                                   </p>
+                                  {exp.notes && (
+                                    <p className="text-xs text-gray-400 italic">{exp.notes}</p>
+                                  )}
                                 </div>
                                 <div className="flex space-x-2">
                                   <button
                                     onClick={() => handleEdit(exp)}
-                                    className="text-emerald-600 hover:text-emerald-700 text-sm"
+                                    className="p-1 text-gray-600 hover:text-teal-600 transition-colors"
+                                    title={t('edit')}
                                   >
-                                    {t('edit')}
+                                    <Edit2 className="w-4 h-4" />
                                   </button>
                                   <button
                                     onClick={() => handleDelete(exp.id)}
-                                    className="text-rose-600 hover:text-rose-700 text-sm"
+                                    className="p-1 text-gray-600 hover:text-red-600 transition-colors"
+                                    title={t('delete')}
                                   >
-                                    {t('delete')}
+                                    <Trash2 className="w-4 h-4" />
                                   </button>
                                 </div>
                               </div>
@@ -267,6 +299,35 @@ export function ExpenditureList() {
           onClose={() => setShowImportDialog(false)}
         />
       )}
-    </div>
+
+      {showClearModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4 text-red-600">
+              <AlertCircle className="w-8 h-8" />
+              <h2 className="text-xl font-bold">{t('clearAllExpenditures')}</h2>
+            </div>
+            <p className="text-gray-600 mb-6">{t('confirmClearAll', { count: expenditures.length })}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  clearExpenditures()
+                  setShowClearModal(false)
+                }}
+                className="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors"
+              >
+                {t('delete')}
+              </button>
+              <button
+                onClick={() => setShowClearModal(false)}
+                className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors"
+              >
+                {t('cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </Card>
   )
 }

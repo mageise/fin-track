@@ -97,21 +97,23 @@ export function IncomeExpenditurePage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">{t('monthlyHousing')}</p>
-                <p className="text-lg font-bold text-amber-600">{formatCurrency(monthlyHousingCosts)}</p>
+                <p className="text-2xl font-bold text-amber-600">{formatCurrency(monthlyHousingCosts)}</p>
               </div>
             </div>
           </Card>
         </div>
 
         <div className="mb-8">
-          <Card title={t('annualNetIncome')}>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500 text-lg">€</span>
+          <Card title={t('income')} className="w-1/2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('annualNetIncome')} (€)
+              </label>
               <input
                 type="number"
                 value={annualNetIncome}
                 onChange={(e) => setAnnualNetIncome(Math.max(0, Number(e.target.value)))}
-                className="w-40 px-3 py-2 text-xl font-bold text-gray-800 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                 min="0"
                 step="100"
               />
